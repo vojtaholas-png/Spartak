@@ -407,17 +407,18 @@ function drawTreninky() {
   }
 }
 
-window.togConf = async function(ds,idx,type) {
+window.togConf = function(ds,idx,type) {
   var players=getPlayersSync(), treneri=getTreneriSync();
   var name=type==="t"?treneri[idx]:players[idx];
-  var t=getTrSync(ds);
+  var t=JSON.parse(JSON.stringify(getTrSync(ds))); // deep copy
   var arr=type==="t"?(t.confT||(t.confT=[])):t.conf;
   var i=arr.indexOf(name);
   if(i===-1){arr.push(name);toast(name+" potvrzen ✓");}
   else{arr.splice(i,1);toast(name+" odpotvzen");}
-  await dbSet("t_"+ds,t);
-  drawTreninky();
+  cache["t_"+ds]=t; // update cache immediately FIRST
+  drawTreninky(); // draw from updated cache
   if(activePage==="sestavy")drawSestavy();
+  dbSet("t_"+ds,t); // save to Firebase in background
 };
 
 window.editTime = function(ds,w){
@@ -428,10 +429,13 @@ window.closeTime = function(ds,w){
   document.getElementById("tv_"+w+"_"+ds).style.display="";
   document.getElementById("ti_"+w+"_"+ds).style.display="none";
 };
-window.saveTime = async function(ds,w,v){
-  var t=getTrSync(ds);if(w==="s")t.time=v;else t.timeEnd=v;
-  await dbSet("t_"+ds,t);toast((w==="s"?"Start":"Konec")+": "+v);closeTime(ds,w);
+window.saveTime = function(ds,w,v){
+  var t=JSON.parse(JSON.stringify(getTrSync(ds)));
+  if(w==="s")t.time=v;else t.timeEnd=v;
+  cache["t_"+ds]=t;
+  toast((w==="s"?"Start":"Konec")+": "+v);closeTime(ds,w);
   drawTreninky();
+  dbSet("t_"+ds,t);
 };
 
 window.addTraining = function(){
@@ -568,29 +572,36 @@ function makeTeam(ds,type,idx,slot,conf,se,mn,mx,lbl){
   card.appendChild(bd);return card;
 }
 
-window.addTeam = async function(ds,type){
-  var se=getSeSync(ds);se[type].push([]);
+window.addTeam = function(ds,type){
+  var se=JSON.parse(JSON.stringify(getSeSync(ds))); // deep copy
+  se[type].push([]);
+  cache["s_"+ds]=se; // update cache immediately FIRST
   openTeam=ds+"|"+type+"|"+(se[type].length-1);
-  await dbSet("s_"+ds,se);
   toast((type==="dv"?"Dvojka":"Trojka")+" pridana");
-  drawSestavy();
+  drawSestavy(); // draw from updated cache
+  dbSet("s_"+ds,se); // save to Firebase in background
 };
 window.rmTeam = async function(ds,type,idx){
   var se=getSeSync(ds);se[type].splice(idx,1);
   openTeam=null;dbSet("s_"+ds,se);
   toast("Tym smazan");drawSestavy();
 };
-window.addToSlot = async function(ds,type,idx,confIdx){
-  var t=getTrSync(ds),se=getSeSync(ds),mx=type==="dv"?3:4;
+window.addToSlot = function(ds,type,idx,confIdx){
+  var t=getTrSync(ds),se=JSON.parse(JSON.stringify(getSeSync(ds))),mx=type==="dv"?3:4;
   var conf=(t.conf||[]).concat(t.confT||[]);
   var p=conf[confIdx];if(!p)return;
   if(se[type][idx].length>=mx){toast("Tym je plny!");return;}
   if(se[type][idx].indexOf(p)!==-1){toast(p+" uz v tymu");return;}
   for(var i=0;i<se[type].length;i++){if(i!==idx&&se[type][i].indexOf(p)!==-1){toast(p+" uz hraje v jiném tymu");return;}}
-  se[type][idx].push(p);await dbSet("s_"+ds,se);toast(p+" pridan");drawSestavy();
+  se[type][idx].push(p);
+  cache["s_"+ds]=se;
+  toast(p+" pridan");
+  drawSestavy();
+  dbSet("s_"+ds,se);
 };
 window.rmFromSlot = async function(ds,type,idx,pi){
-  var se=getSeSync(ds);se[type][idx].splice(pi,1);dbSet("s_"+ds,se);toast("Hrac odebran");drawSestavy();
+  var se=JSON.parse(JSON.stringify(getSeSync(ds)));se[type][idx].splice(pi,1);
+  cache["s_"+ds]=se;drawSestavy();dbSet("s_"+ds,se);toast("Hrac odebran");
 };
 
 // ── HRACI ──────────────────────────────────────────────────────────────────────
