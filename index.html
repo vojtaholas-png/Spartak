@@ -223,12 +223,21 @@ var DEFAULT_PLAYERS = [
 ];
 var DEFAULT_TRENERI = ["Martin Spilka","Radoslav Frank"];
 
-async function getPlayers() { var v=await dbGet("players"); return v||DEFAULT_PLAYERS.slice(); }
-async function getTreneri() { var v=await dbGet("treneri"); return v||DEFAULT_TRENERI.slice(); }
-async function getTr(ds) { var v=await dbGet("t_"+ds); return v||{conf:[],confT:[],time:"18:00",timeEnd:"20:00"}; }
-async function getSe(ds) { var v=await dbGet("s_"+ds); return v||{dv:[],tr3:[]}; }
-async function getExtra(wk) { var v=await dbGet("ex_"+wk); return v||[]; }
-async function getDeleted(wk) { var v=await dbGet("del_"+wk); return v||[]; }
+// Sync getters - use cache directly, instant access
+function getPlayersSync() { return cache["players"]||DEFAULT_PLAYERS.slice(); }
+function getTreneriSync() { return cache["treneri"]||DEFAULT_TRENERI.slice(); }
+function getTrSync(ds) { return cache["t_"+ds]||{conf:[],confT:[],time:"18:00",timeEnd:"20:00"}; }
+function getSeSync(ds) { return cache["s_"+ds]||{dv:[],tr3:[]}; }
+function getExtraSync(wk) { return cache["ex_"+wk]||[]; }
+function getDeletedSync(wk) { return cache["del_"+wk]||[]; }
+
+// Async getters - fetch from Firebase if not in cache
+async function getPlayers() { if(cache["players"]!==undefined)return getPlayersSync(); var v=await dbGet("players"); return v||DEFAULT_PLAYERS.slice(); }
+async function getTreneri() { if(cache["treneri"]!==undefined)return getTreneriSync(); var v=await dbGet("treneri"); return v||DEFAULT_TRENERI.slice(); }
+async function getTr(ds) { if(cache["t_"+ds]!==undefined)return getTrSync(ds); var v=await dbGet("t_"+ds); return v||{conf:[],confT:[],time:"18:00",timeEnd:"20:00"}; }
+async function getSe(ds) { if(cache["s_"+ds]!==undefined)return getSeSync(ds); var v=await dbGet("s_"+ds); return v||{dv:[],tr3:[]}; }
+async function getExtra(wk) { if(cache["ex_"+wk]!==undefined)return getExtraSync(wk); var v=await dbGet("ex_"+wk); return v||[]; }
+async function getDeleted(wk) { if(cache["del_"+wk]!==undefined)return getDeletedSync(wk); var v=await dbGet("del_"+wk); return v||[]; }
 
 // ── DATES ─────────────────────────────────────────────────────────────────────
 function weekDates(off) {
@@ -266,16 +275,16 @@ window.chgW = function(dir) {
 };
 
 // ── TRENINKY ──────────────────────────────────────────────────────────────────
-async function drawTreninky() {
+function drawTreninky() {
   document.getElementById("wkl1").textContent=wkLbl();
   var cont=document.getElementById("trList");
   cont.innerHTML="";
 
-  var players = await getPlayers();
-  var treneri = await getTreneri();
+  var players = getPlayersSync();
+  var treneri = getTreneriSync();
   var wk=weekKey(weekOff);
-  var deleted=await getDeleted(wk);
-  var extras=await getExtra(wk);
+  var deleted=getDeletedSync(wk);
+  var extras=getExtraSync(wk);
   var fixedDates=weekDates(weekOff);
   var fixedDs=fixedDates.map(function(dt){return toDs(dt);});
 
@@ -308,7 +317,7 @@ async function drawTreninky() {
   for(var di=0; di<allDates.length; di++) {
     let dt=allDates[di];
     let ds=toDs(dt);
-    let t=await getTr(ds);
+    let t=getTrSync(ds);
     let tod=isToday(dt);
     var card=document.createElement("div");card.className="card";
 
@@ -392,9 +401,9 @@ async function drawTreninky() {
 }
 
 window.togConf = async function(ds,idx,type) {
-  var players=await getPlayers(), treneri=await getTreneri();
+  var players=getPlayersSync(), treneri=getTreneriSync();
   var name=type==="t"?treneri[idx]:players[idx];
-  var t=await getTr(ds);
+  var t=getTrSync(ds);
   var arr=type==="t"?(t.confT||(t.confT=[])):t.conf;
   var i=arr.indexOf(name);
   if(i===-1){arr.push(name);toast(name+" potvrzen ✓");}
@@ -413,7 +422,7 @@ window.closeTime = function(ds,w){
   document.getElementById("ti_"+w+"_"+ds).style.display="none";
 };
 window.saveTime = async function(ds,w,v){
-  var t=await getTr(ds);if(w==="s")t.time=v;else t.timeEnd=v;
+  var t=getTrSync(ds);if(w==="s")t.time=v;else t.timeEnd=v;
   await dbSet("t_"+ds,t);toast((w==="s"?"Start":"Konec")+": "+v);closeTime(ds,w);
   drawTreninky();
 };
@@ -433,7 +442,7 @@ window.addTraining = function(){
   document.getElementById("newTrConfirm").addEventListener("click",async function(){
     var ds=document.getElementById("newTrDate").value;if(!ds){toast("Vyber datum");return;}
     var wk=weekKey(weekOff);
-    var extras=await getExtra(wk);
+    var extras=getExtraSync(wk);
     if(extras.indexOf(ds)!==-1){toast("Trenink uz existuje");return;}
     extras.push(ds);extras.sort();
     await dbSet("ex_"+wk,extras);row.remove();toast("Trenink pridan");drawTreninky();
@@ -443,31 +452,31 @@ window.addTraining = function(){
 
 window.delTraining = async function(ds){
   var wk=weekKey(weekOff);
-  var extras=(await getExtra(wk)).filter(function(d){return d!==ds;});
+  var extras=getExtraSync(wk).filter(function(d){return d!==ds;});
   await dbSet("ex_"+wk,extras);
   var fixedDs=weekDates(weekOff).map(function(d){return toDs(d);});
   if(fixedDs.indexOf(ds)!==-1){
-    var deleted=await getDeleted(wk);
+    var deleted=getDeletedSync(wk);
     if(deleted.indexOf(ds)===-1)deleted.push(ds);
     await dbSet("del_"+wk,deleted);
   }
   await dbSet("t_"+ds,null);
   await dbSet("s_"+ds,null);
   toast("Trenink smazan");
-  await drawTreninky();
-  if(activePage==="sestavy")await drawSestavy();
+  drawTreninky();
+  if(activePage==="sestavy")drawSestavy();
 };
 
 // ── SESTAVY ───────────────────────────────────────────────────────────────────
-async function drawSestavy() {
+function drawSestavy() {
   document.getElementById("wkl2").textContent=wkLbl();
   var cont=document.getElementById("seList");cont.innerHTML="";
-  var players=await getPlayers(),treneri=await getTreneri();
+  var players=getPlayersSync(),treneri=getTreneriSync();
 
   var dates=weekDates(weekOff);
   for(var di=0;di<dates.length;di++){
     let dt=dates[di],ds=toDs(dt);
-    var t=await getTr(ds),se=await getSe(ds);
+    var t=getTrSync(ds),se=getSeSync(ds);
     var conf=(t.conf||[]).concat(t.confT||[]);
     var section=document.createElement("div");section.className="se-day";
     var title=document.createElement("div");title.className="se-day-title";
@@ -553,33 +562,33 @@ function makeTeam(ds,type,idx,slot,conf,se,mn,mx,lbl){
 }
 
 window.addTeam = async function(ds,type){
-  var se=await getSe(ds);se[type].push([]);
+  var se=getSeSync(ds);se[type].push([]);
   openTeam=ds+"|"+type+"|"+(se[type].length-1);
   await dbSet("s_"+ds,se);
   toast((type==="dv"?"Dvojka":"Trojka")+" pridana");
-  await drawSestavy();
+  drawSestavy();
 };
 window.rmTeam = async function(ds,type,idx){
-  var se=await getSe(ds);se[type].splice(idx,1);
-  openTeam=null;await dbSet("s_"+ds,se);
-  toast("Tym smazan");await drawSestavy();
+  var se=getSeSync(ds);se[type].splice(idx,1);
+  openTeam=null;dbSet("s_"+ds,se);
+  toast("Tym smazan");drawSestavy();
 };
 window.addToSlot = async function(ds,type,idx,confIdx){
-  var t=await getTr(ds),se=await getSe(ds),mx=type==="dv"?3:4;
+  var t=getTrSync(ds),se=getSeSync(ds),mx=type==="dv"?3:4;
   var conf=(t.conf||[]).concat(t.confT||[]);
   var p=conf[confIdx];if(!p)return;
   if(se[type][idx].length>=mx){toast("Tym je plny!");return;}
   if(se[type][idx].indexOf(p)!==-1){toast(p+" uz v tymu");return;}
   for(var i=0;i<se[type].length;i++){if(i!==idx&&se[type][i].indexOf(p)!==-1){toast(p+" uz hraje v jiném tymu");return;}}
-  se[type][idx].push(p);await dbSet("s_"+ds,se);toast(p+" pridan");await drawSestavy();
+  se[type][idx].push(p);await dbSet("s_"+ds,se);toast(p+" pridan");drawSestavy();
 };
 window.rmFromSlot = async function(ds,type,idx,pi){
-  var se=await getSe(ds);se[type][idx].splice(pi,1);await dbSet("s_"+ds,se);toast("Hrac odebran");await drawSestavy();
+  var se=getSeSync(ds);se[type][idx].splice(pi,1);dbSet("s_"+ds,se);toast("Hrac odebran");drawSestavy();
 };
 
 // ── HRACI ──────────────────────────────────────────────────────────────────────
-async function drawHraci(){
-  var players=await getPlayers(),treneri=await getTreneri();
+function drawHraci(){
+  var players=getPlayersSync(),treneri=getTreneriSync();
   renderPeople("plBody","plCnt",players,"hracu","#1a3a6e",false,players,treneri);
   renderPeople("trBody","trCnt",treneri,"treneri","#6366f1",true,players,treneri);
 }
@@ -616,20 +625,20 @@ function renderPeople(bodyId,cntId,arr,unit,numColor,isTr,players,treneri){
 async function addPlayer(){
   var inp=document.getElementById("newPl");if(!inp)return;
   var n=inp.value.trim();if(!n)return;
-  var players=await getPlayers();
+  var players=getPlayersSync();
   if(players.indexOf(n)!==-1){toast("Uz existuje");return;}
-  players.push(n);await dbSet("players",players);inp.value="";drawHraci();toast(n+" pridan");
+  players.push(n);dbSet("players",players);inp.value="";drawHraci();toast(n+" pridan");
 }
 async function rmPlayer(i){
-  var players=await getPlayers();var n=players.splice(i,1)[0];await dbSet("players",players);drawHraci();toast(n+" odebran");
+  var players=getPlayersSync();var n=players.splice(i,1)[0];dbSet("players",players);drawHraci();toast(n+" odebran");
 }
 async function addTrener(){
   var inp=document.getElementById("newTr");if(!inp)return;
   var n=inp.value.trim();if(!n)return;
-  var treneri=await getTreneri();treneri.push(n);await dbSet("treneri",treneri);inp.value="";drawHraci();toast(n+" pridan");
+  var treneri=getTreneriSync();treneri.push(n);dbSet("treneri",treneri);inp.value="";drawHraci();toast(n+" pridan");
 }
 async function rmTrener(i){
-  var treneri=await getTreneri();var n=treneri.splice(i,1)[0];await dbSet("treneri",treneri);drawHraci();toast(n+" odebran");
+  var treneri=getTreneriSync();var n=treneri.splice(i,1)[0];dbSet("treneri",treneri);drawHraci();toast(n+" odebran");
 }
 
 // ── LOCK ──────────────────────────────────────────────────────────────────────
@@ -688,7 +697,7 @@ document.getElementById("modal").addEventListener("click",function(e){if(e.targe
 document.getElementById("pw").addEventListener("keydown",function(e){if(e.key==="Enter")checkPw();});
 
 chgW(0);
-drawTreninky().then(function(){ appReady = true; });
+drawTreninky(); appReady = true;
 </script>
 </body>
 </html>
