@@ -200,10 +200,12 @@ onSnapshot(collection(db, "spartak"), function(snapshot) {
     var val = change.doc.exists() ? change.doc.data().v : null;
     cache[id] = val;
   });
-  // Redraw current page
-  if(activePage === "treninky") drawTreninky();
-  if(activePage === "sestavy") drawSestavy();
-  if(activePage === "hraci") drawHraci();
+  // Redraw current page (only after initial load)
+  if(appReady) {
+    if(activePage === "treninky") drawTreninky();
+    if(activePage === "sestavy") drawSestavy();
+    if(activePage === "hraci") drawHraci();
+  }
 });
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -251,6 +253,7 @@ window.goTo = function(page) {
   document.querySelectorAll(".nav-btn").forEach(function(b){b.classList.remove("act");});
   document.getElementById("pg-"+page).classList.add("act");
   document.getElementById("nb-"+page).classList.add("act");
+  if(page==="treninky")drawTreninky();
   if(page==="sestavy")drawSestavy();
   if(page==="hraci")drawHraci();
 };
@@ -397,6 +400,8 @@ window.togConf = async function(ds,idx,type) {
   if(i===-1){arr.push(name);toast(name+" potvrzen ✓");}
   else{arr.splice(i,1);toast(name+" odpotvzen");}
   await dbSet("t_"+ds,t);
+  drawTreninky();
+  if(activePage==="sestavy")drawSestavy();
 };
 
 window.editTime = function(ds,w){
@@ -410,6 +415,7 @@ window.closeTime = function(ds,w){
 window.saveTime = async function(ds,w,v){
   var t=await getTr(ds);if(w==="s")t.time=v;else t.timeEnd=v;
   await dbSet("t_"+ds,t);toast((w==="s"?"Start":"Konec")+": "+v);closeTime(ds,w);
+  drawTreninky();
 };
 
 window.addTraining = function(){
@@ -447,8 +453,9 @@ window.delTraining = async function(ds){
   }
   await dbSet("t_"+ds,null);
   await dbSet("s_"+ds,null);
-  toast("Trenink smazan");drawTreninky();
-  if(activePage==="sestavy")drawSestavy();
+  toast("Trenink smazan");
+  await drawTreninky();
+  if(activePage==="sestavy")await drawSestavy();
 };
 
 // ── SESTAVY ───────────────────────────────────────────────────────────────────
@@ -546,13 +553,16 @@ function makeTeam(ds,type,idx,slot,conf,se,mn,mx,lbl){
 }
 
 window.addTeam = async function(ds,type){
-  var se=await getSe(ds);se[type].push([]);await dbSet("s_"+ds,se);
+  var se=await getSe(ds);se[type].push([]);
   openTeam=ds+"|"+type+"|"+(se[type].length-1);
-  toast((type==="dv"?"Dvojka":"Trojka")+" pridana");drawSestavy();
+  await dbSet("s_"+ds,se);
+  toast((type==="dv"?"Dvojka":"Trojka")+" pridana");
+  await drawSestavy();
 };
 window.rmTeam = async function(ds,type,idx){
-  var se=await getSe(ds);se[type].splice(idx,1);await dbSet("s_"+ds,se);
-  openTeam=null;toast("Tym smazan");drawSestavy();
+  var se=await getSe(ds);se[type].splice(idx,1);
+  openTeam=null;await dbSet("s_"+ds,se);
+  toast("Tym smazan");await drawSestavy();
 };
 window.addToSlot = async function(ds,type,idx,confIdx){
   var t=await getTr(ds),se=await getSe(ds),mx=type==="dv"?3:4;
@@ -561,10 +571,10 @@ window.addToSlot = async function(ds,type,idx,confIdx){
   if(se[type][idx].length>=mx){toast("Tym je plny!");return;}
   if(se[type][idx].indexOf(p)!==-1){toast(p+" uz v tymu");return;}
   for(var i=0;i<se[type].length;i++){if(i!==idx&&se[type][i].indexOf(p)!==-1){toast(p+" uz hraje v jiném tymu");return;}}
-  se[type][idx].push(p);await dbSet("s_"+ds,se);toast(p+" pridan");drawSestavy();
+  se[type][idx].push(p);await dbSet("s_"+ds,se);toast(p+" pridan");await drawSestavy();
 };
 window.rmFromSlot = async function(ds,type,idx,pi){
-  var se=await getSe(ds);se[type][idx].splice(pi,1);await dbSet("s_"+ds,se);toast("Hrac odebran");drawSestavy();
+  var se=await getSe(ds);se[type][idx].splice(pi,1);await dbSet("s_"+ds,se);toast("Hrac odebran");await drawSestavy();
 };
 
 // ── HRACI ──────────────────────────────────────────────────────────────────────
@@ -660,6 +670,7 @@ window.toast = function(m){
   clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove("show");},2400);
 };
 
+var appReady = false;
 // INIT - attach all event listeners
 document.querySelectorAll(".nav-btn[data-page]").forEach(function(btn){
   btn.addEventListener("click",function(){ goTo(this.dataset.page); });
@@ -676,7 +687,8 @@ document.getElementById("modalPrihlasit").addEventListener("click",checkPw);
 document.getElementById("modal").addEventListener("click",function(e){if(e.target.id==="modal")closeModal();});
 document.getElementById("pw").addEventListener("keydown",function(e){if(e.key==="Enter")checkPw();});
 
-chgW(0);drawTreninky();
+chgW(0);
+drawTreninky().then(function(){ appReady = true; });
 </script>
 </body>
 </html>
