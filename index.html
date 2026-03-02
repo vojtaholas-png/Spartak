@@ -188,8 +188,15 @@ async function dbGet(docId) {
   cache[docId] = snap.exists() ? snap.data().v : null;
   return cache[docId];
 }
+var ignoreSnapshot = false;
+var ignoreTimer = null;
+
 async function dbSet(docId, val) {
   cache[docId] = val;
+  // Ignore incoming snapshots for 2s so our local cache stays fresh
+  ignoreSnapshot = true;
+  clearTimeout(ignoreTimer);
+  ignoreTimer = setTimeout(function(){ ignoreSnapshot = false; }, 2000);
   await setDoc(doc(db, "spartak", docId), {v: val});
 }
 
@@ -200,8 +207,8 @@ onSnapshot(collection(db, "spartak"), function(snapshot) {
     var val = change.doc.exists() ? change.doc.data().v : null;
     cache[id] = val;
   });
-  // Redraw current page (only after initial load)
-  if(appReady) {
+  // Redraw only if we didn't just write (avoid overwriting local cache)
+  if(appReady && !ignoreSnapshot) {
     if(activePage === "treninky") drawTreninky();
     if(activePage === "sestavy") drawSestavy();
     if(activePage === "hraci") drawHraci();
