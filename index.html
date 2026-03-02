@@ -188,30 +188,34 @@ async function dbGet(docId) {
   cache[docId] = snap.exists() ? snap.data().v : null;
   return cache[docId];
 }
-var ignoreSnapshot = false;
-var ignoreTimer = null;
+var pendingWrites = {}; // track keys we just wrote
 
 async function dbSet(docId, val) {
   cache[docId] = val;
-  // Ignore incoming snapshots for 2s so our local cache stays fresh
-  ignoreSnapshot = true;
-  clearTimeout(ignoreTimer);
-  ignoreTimer = setTimeout(function(){ ignoreSnapshot = false; }, 2000);
+  pendingWrites[docId] = true; // mark as pending
   await setDoc(doc(db, "spartak", docId), {v: val});
+  // Keep pending for 3s after write completes
+  setTimeout(function(){ delete pendingWrites[docId]; }, 3000);
 }
 
 // Listen for real-time changes
 onSnapshot(collection(db, "spartak"), function(snapshot) {
-  snapshot.docChanges().forEach(function(change) {
-    var id = change.doc.id;
-    var val = change.doc.exists() ? change.doc.data().v : null;
-    cache[id] = val;
-  });
-  // Redraw only if we didn't just write (avoid overwriting local cache)
-  if(appReady && !ignoreSnapshot) {
-    if(activePage === "treninky") drawTreninky();
-    if(activePage === "sestavy") drawSestavy();
-    if(activePage === "hraci") drawHraci();
+  // Only update cache for keys we didn't just write
+  if(appReady) {
+    var needRedraw = false;
+    snapshot.docChanges().forEach(function(change) {
+      var id = change.doc.id;
+      if(!pendingWrites[id]) { // only update if WE didn't write it
+        var val = change.doc.exists() ? change.doc.data().v : null;
+        cache[id] = val;
+        needRedraw = true;
+      }
+    });
+    if(needRedraw) {
+      if(activePage === "treninky") drawTreninky();
+      if(activePage === "sestavy") drawSestavy();
+      if(activePage === "hraci") drawHraci();
+    }
   }
 });
 
