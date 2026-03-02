@@ -109,6 +109,23 @@ body{font-family:'Barlow',sans-serif;background:var(--BG);color:var(--T);min-hei
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--GD);color:#fff;padding:10px 20px;border-radius:26px;font-size:0.83rem;font-weight:600;z-index:99999;transition:transform .3s;pointer-events:none;white-space:nowrap;}
 .toast.show{transform:translateX(-50%) translateY(0);}
 .loading{text-align:center;padding:40px;color:var(--M);font-size:0.9rem;}
+.zap-card{background:#fff;border-radius:13px;box-shadow:0 2px 12px rgba(0,0,0,0.07);margin-bottom:10px;overflow:hidden;}
+.zap-head{padding:10px 16px;display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--B),var(--BL));}
+.zap-kolo{font-family:'Bebas Neue',sans-serif;font-size:1rem;color:var(--Y);letter-spacing:0.06em;white-space:nowrap;}
+.zap-datum{font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;color:rgba(255,255,255,0.7);white-space:nowrap;}
+.zap-body{padding:12px 16px;}
+.zap-teams{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.zap-home{font-weight:700;font-size:0.88rem;flex:1;text-align:right;}
+.zap-home.spartak{color:var(--G);}
+.zap-vs{font-family:'Bebas Neue',sans-serif;font-size:1rem;color:var(--M);white-space:nowrap;}
+.zap-away{font-weight:700;font-size:0.88rem;flex:1;}
+.zap-away.spartak{color:var(--G);}
+.zap-info{display:flex;gap:12px;margin-top:6px;flex-wrap:wrap;}
+.zap-time{font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;color:var(--M);}
+.zap-note{font-size:0.72rem;background:#fef9c3;color:#854d0e;border-radius:6px;padding:2px 8px;font-weight:600;}
+.zap-past{opacity:0.55;}
+.zap-next{border:2px solid var(--Y);box-shadow:0 0 0 3px rgba(249,192,0,0.15);}
+.zap-section{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:0.06em;color:var(--GD);margin:14px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--GR);}
 .sync-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#4ade80;margin-left:6px;animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
 </style>
@@ -124,6 +141,7 @@ body{font-family:'Barlow',sans-serif;background:var(--BG);color:var(--T);min-hei
 <div class="nav-wrap"><div class="nav">
   <button class="nav-btn act" id="nb-treninky" data-page="treninky">📅 Treninky</button>
   <button class="nav-btn" id="nb-sestavy" data-page="sestavy">📋 Sestavy</button>
+  <button class="nav-btn" id="nb-zapasy" data-page="zapasy">⚽ Zapasy</button>
   <button class="nav-btn" id="nb-hraci" data-page="hraci">👥 Hraci</button>
 </div></div>
 <div class="main">
@@ -142,6 +160,9 @@ body{font-family:'Barlow',sans-serif;background:var(--BG);color:var(--T);min-hei
       <button class="wkb" id="wk2-next">Pristi &#9654;</button>
     </div></div>
     <div id="seList"><div class="loading">Nacitam data...</div></div>
+  </div>
+  <div class="page" id="pg-zapasy">
+    <div id="zapasyList"></div>
   </div>
   <div class="page" id="pg-hraci">
     <div class="card"><div class="c-head c-blue"><div><h3>Hraci</h3><div class="sub" id="plCnt"></div></div></div><div class="c-body" id="plBody"></div></div>
@@ -275,6 +296,7 @@ window.goTo = function(page) {
   document.getElementById("nb-"+page).classList.add("act");
   if(page==="treninky")drawTreninky();
   if(page==="sestavy")drawSestavy();
+  if(page==="zapasy")drawZapasy();
   if(page==="hraci")drawHraci();
 };
 window.chgW = function(dir) {
@@ -401,8 +423,8 @@ function drawTreninky() {
       delTrBtn.className="tr-act-btn del";
       delTrBtn.style.cssText="width:100%;margin-top:10px;text-align:center;border-radius:8px;padding:8px;";
       delTrBtn.textContent="Smazat trenink";
-      var _ds=ds; // capture in closure
-      delTrBtn.addEventListener("click",function(){ delTraining(_ds); });
+      delTrBtn.dataset.ds=ds;
+      delTrBtn.addEventListener("click",function(){ delTraining(this.dataset.ds); });
       body.appendChild(delTrBtn);
     }
 
@@ -707,6 +729,70 @@ window.toast = function(m){
   var t=document.getElementById("toast");t.textContent=m;t.classList.add("show");
   clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove("show");},2400);
 };
+
+var ZAPASY = [{"kolo": 1, "den": "pa", "datum": "2026-04-03", "cas": "14:30", "domaci": "TJ Spartak VOTOČEK team Čelákovice", "hoste": "NK AUSTIN Vsetin", "domaci_spartak": true, "pozn": ""}, {"kolo": 2, "den": "so", "datum": "2026-04-11", "cas": "10:00", "domaci": "TJ AVIA Čakovice", "hoste": "TJ Spartak VOTOČEK team Čelákovice", "domaci_spartak": false, "pozn": ""}, {"kolo": 3, "den": "so", "datum": "2026-04-18", "cas": "14:30", "domaci": "TJ Spartak VOTOČEK team Čelákovice", "hoste": "SK Liapor Karlovy Vary", "domaci_spartak": true, "pozn": "bez Adama"}, {"kolo": 4, "den": "so", "datum": "2026-04-25", "cas": "15:00", "domaci": "MNK mobilprovás Modřice", "hoste": "TJ Spartak VOTOČEK team Čelákovice", "domaci_spartak": false, "pozn": ""}, {"kolo": 5, "den": "so", "datum": "2026-05-02", "cas": "10:00", "domaci": "Tělocvičná jednota Sokol Řeporyje", "hoste": "TJ Spartak VOTOČEK team Čelákovice", "domaci_spartak": false, "pozn": "bez Adama"}, {"kolo": 6, "den": "so", "datum": "2026-05-09", "cas": "14:30", "domaci": "TJ Spartak VOTOČEK team Čelákovice", "hoste": "Tělovýchovná jednota Radomyšl", "domaci_spartak": true, "pozn": "bez petera"}, {"kolo": 7, "den": "ne", "datum": "2026-05-10", "cas": "14:30", "domaci": "Sportovni klub nohejbalu Žatec", "hoste": "TJ Spartak VOTOČEK team Čelákovice", "domaci_spartak": false, "pozn": ""}, {"kolo": 8, "den": "ne", "datum": "2026-05-17", "cas": "14:30", "domaci": "NK AUSTIN Vsetin", "hoste": "TJ Spartak VOTOČEK team Čelákovice", "domaci_spartak": false, "pozn": ""}, {"kolo": 9, "den": "so", "datum": "2026-05-23", "cas": "14:30", "domaci": "TJ Spartak VOTOČEK team Čelákovice", "hoste": "TJ AVIA Čakovice", "domaci_spartak": true, "pozn": ""}, {"kolo": 10, "den": "so", "datum": "2026-05-30", "cas": "14:00", "domaci": "SK Liapor Karlovy Vary", "hoste": "TJ Spartak VOTOČEK team Čelákovice", "domaci_spartak": false, "pozn": "bez PORKY"}, {"kolo": 11, "den": "so", "datum": "2026-06-06", "cas": "14:30", "domaci": "TJ Spartak VOTOČEK team Čelákovice", "hoste": "MNK mobilprovás Modřice", "domaci_spartak": true, "pozn": ""}, {"kolo": 12, "den": "ne", "datum": "2026-06-07", "cas": "14:30", "domaci": "TJ Spartak VOTOČEK team Čelákovice", "hoste": "Tělocvičná jednota Sokol Řeporyje", "domaci_spartak": true, "pozn": "bez Adama"}, {"kolo": 13, "den": "so", "datum": "2026-06-13", "cas": "14:00", "domaci": "Tělovýchovná jednota Radomyšl", "hoste": "TJ Spartak VOTOČEK team Čelákovice", "domaci_spartak": false, "pozn": "bez Adama bez petera"}, {"kolo": 14, "den": "so", "datum": "2026-06-20", "cas": "14:00", "domaci": "TJ Spartak VOTOČEK team Čelákovice", "hoste": "Sportovni klub nohejbalu Žatec", "domaci_spartak": true, "pozn": ""}];
+
+function drawZapasy() {
+  var cont = document.getElementById("zapasyList");
+  cont.innerHTML = "";
+  var now = new Date();
+  var todayDs = now.toISOString().split("T")[0];
+  
+  // Find next match
+  var nextIdx = -1;
+  for(var i=0;i<ZAPASY.length;i++) {
+    if(ZAPASY[i].datum >= todayDs) { nextIdx=i; break; }
+  }
+  
+  // Header
+  var hdr = document.createElement("div");
+  hdr.style.cssText="background:linear-gradient(135deg,var(--GD),var(--G));border-radius:13px;padding:14px 18px;margin-bottom:14px;color:#fff;";
+  hdr.innerHTML='<div style="font-family:\'Bebas Neue\',sans-serif;font-size:1.3rem;letter-spacing:0.07em;color:var(--Y)">EXTRALIGA MUŽI 2026</div>'
+    +'<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;letter-spacing:0.12em;text-transform:uppercase;opacity:0.7;margin-top:2px">TJ Spartak VOTOČEK team Čelákovice</div>';
+  cont.appendChild(hdr);
+
+  var pastLbl = false, futureLbl = false;
+  ZAPASY.forEach(function(z,i) {
+    var isPast = z.datum < todayDs;
+    var isNext = i === nextIdx;
+    
+    if(!isPast && !futureLbl) {
+      var lbl=document.createElement("div");lbl.className="zap-section";
+      lbl.textContent="Nadchazejici zapasy";cont.appendChild(lbl);futureLbl=true;
+    }
+    if(isPast && !pastLbl) {
+      var lbl2=document.createElement("div");lbl2.className="zap-section";
+      lbl2.textContent="Odehrane zapasy";cont.appendChild(lbl2);pastLbl=true;
+    }
+    
+    var card=document.createElement("div");
+    card.className="zap-card"+(isPast?" zap-past":"")+(isNext?" zap-next":"");
+    
+    var domSpartak=z.domaci_spartak;
+    var head=document.createElement("div");head.className="zap-head";
+    var dny={"pa":"Patek","so":"Sobota","ne":"Nedele"};
+    var dateParts=z.datum.split("-");
+    var dateDisp=parseInt(dateParts[2])+"."+parseInt(dateParts[1])+"."+dateParts[0];
+    head.innerHTML='<span class="zap-kolo">Kolo '+z.kolo+'</span>'
+      +'<span class="zap-datum">'+(dny[z.den]||z.den)+' '+dateDisp+'</span>'
+      +(isNext?'<span style="background:var(--Y);color:var(--B);font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:auto">DALSI ZAPAS</span>':'');
+    card.appendChild(head);
+    
+    var body=document.createElement("div");body.className="zap-body";
+    body.innerHTML='<div class="zap-teams">'
+      +'<div class="zap-home'+(domSpartak?" spartak":"")+'">'+z.domaci+'</div>'
+      +'<div class="zap-vs">vs</div>'
+      +'<div class="zap-away'+(!domSpartak?" spartak":"")+'">'+z.hoste+'</div>'
+      +'</div>'
+      +'<div class="zap-info">'
+      +'<span class="zap-time">🕐 '+z.cas+'</span>'
+      +(domSpartak?'<span class="zap-time">🏠 Domaci</span>':'<span class="zap-time">✈️ Venku</span>')
+      +(z.pozn?'<span class="zap-note">⚠️ '+z.pozn+'</span>':'')
+      +'</div>';
+    card.appendChild(body);
+    cont.appendChild(card);
+  });
+}
 
 var appReady = false;
 // INIT - attach all event listeners
