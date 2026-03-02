@@ -465,21 +465,28 @@ window.addTraining = function(){
   document.getElementById("newTrCancel").addEventListener("click",function(){row.remove();});
 };
 
-window.delTraining = async function(ds){
+window.delTraining = function(ds){
   var wk=weekKey(weekOff);
+  // Update cache immediately
   var extras=getExtraSync(wk).filter(function(d){return d!==ds;});
-  await dbSet("ex_"+wk,extras);
+  cache["ex_"+wk]=extras;
   var fixedDs=weekDates(weekOff).map(function(d){return toDs(d);});
   if(fixedDs.indexOf(ds)!==-1){
-    var deleted=getDeletedSync(wk);
+    var deleted=JSON.parse(JSON.stringify(getDeletedSync(wk)));
     if(deleted.indexOf(ds)===-1)deleted.push(ds);
-    await dbSet("del_"+wk,deleted);
+    cache["del_"+wk]=deleted;
   }
-  await dbSet("t_"+ds,null);
-  await dbSet("s_"+ds,null);
+  cache["t_"+ds]=null;
+  cache["s_"+ds]=null;
+  // Draw immediately from updated cache
   toast("Trenink smazan");
   drawTreninky();
   if(activePage==="sestavy")drawSestavy();
+  // Save to Firebase in background
+  dbSet("ex_"+wk,extras);
+  dbSet("del_"+wk, cache["del_"+wk]||[]);
+  dbSet("t_"+ds,null);
+  dbSet("s_"+ds,null);
 };
 
 // ── SESTAVY ───────────────────────────────────────────────────────────────────
