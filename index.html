@@ -401,8 +401,8 @@ function drawTreninky() {
       delTrBtn.className="tr-act-btn del";
       delTrBtn.style.cssText="width:100%;margin-top:10px;text-align:center;border-radius:8px;padding:8px;";
       delTrBtn.textContent="Smazat trenink";
-      delTrBtn.dataset.ds=ds;
-      delTrBtn.addEventListener("click",function(){delTraining(this.dataset.ds);});
+      var _ds=ds; // capture in closure
+      delTrBtn.addEventListener("click",function(){ delTraining(_ds); });
       body.appendChild(delTrBtn);
     }
 
