@@ -228,7 +228,15 @@ var pendingWrites = {};
 async function dbSet(docId, val) {
   cache[docId] = val;
   pendingWrites[docId] = Date.now();
-  setDoc(doc(db, "spartak", docId), {v: val});
+  // Serialize nested arrays for Firestore (can't store [[]] natively)
+  var toStore = val;
+  if(val && typeof val === "object" && ("dv" in val || "tr3" in val)) {
+    toStore = {
+      dv: JSON.stringify(val.dv||[]),
+      tr3: JSON.stringify(val.tr3||[])
+    };
+  }
+  setDoc(doc(db, "spartak", docId), {v: toStore});
 }
 
 function isPending(docId) {
@@ -282,17 +290,16 @@ var DEFAULT_TRENERI = ["Martin Spilka","Radoslav Frank"];
 function getPlayersSync() { return cache["players"]||DEFAULT_PLAYERS.slice(); }
 function getTreneriSync() { return cache["treneri"]||DEFAULT_TRENERI.slice(); }
 function getTrSync(ds) { return cache["t_"+ds]||{conf:[],confT:[],time:"18:00",timeEnd:"20:00"}; }
-function getSeSync(ds) { 
+function getSeSync(ds) {
   var v = cache["s_"+ds];
   if(!v) return {dv:[],tr3:[]};
-  // Migrate old format: convert arrays to objects if needed
-  if(v.dv && v.dv.length>0 && Array.isArray(v.dv[0])) {
-    v.dv = v.dv.map(function(s){return {p:s};});
-  }
-  if(v.tr3 && v.tr3.length>0 && Array.isArray(v.tr3[0])) {
-    v.tr3 = v.tr3.map(function(s){return {p:s};});
-  }
-  return v;
+  // Deserialize if stored as JSON strings
+  var dv = typeof v.dv === "string" ? JSON.parse(v.dv) : (v.dv||[]);
+  var tr3 = typeof v.tr3 === "string" ? JSON.parse(v.tr3) : (v.tr3||[]);
+  // Convert {p:[]} objects back to plain arrays if needed
+  dv = dv.map(function(s){ return s&&s.p ? s.p : (Array.isArray(s)?s:[]); });
+  tr3 = tr3.map(function(s){ return s&&s.p ? s.p : (Array.isArray(s)?s:[]); });
+  return {dv:dv, tr3:tr3};
 }
 function getExtraSync(wk) { return cache["ex_"+wk]||[]; }
 function getDeletedSync(wk) { return cache["del_"+wk]||[]; }
@@ -599,11 +606,10 @@ function makeTeam(ds,type,idx,slot,conf,se,mn,mx,lbl){
   var tid=ds+"|"+type+"|"+idx;
   var isOpen=openTeam===tid&&unlocked;
   var card=document.createElement("div");card.className="team-card"+(isOpen?" open":"");
-  var slotArr=slot&&slot.p?slot.p:(slot||[]);
-  var preview=slotArr.length>0?slotArr.join(", ")+" ("+slotArr.length+"/"+mx+")":"prazdny (min "+mn+", max "+mx+")";
+  var preview=slot.length>0?slot.join(", ")+" ("+slot.length+"/"+mx+")":"prazdny (min "+mn+", max "+mx+")";
   var hd=document.createElement("div");hd.className="team-hd";
   hd.innerHTML='<span class="team-hd-name">'+lbl+" "+(idx+1)+'</span>'
-    +'<span class="team-hd-pl" style="color:'+(slotArr.length>0?"var(--G)":"var(--M)")+'">'+preview+'</span>'
+    +'<span class="team-hd-pl" style="color:'+(slot.length>0?"var(--G)":"var(--M)")+'">'+preview+'</span>'
     +(unlocked?'<span class="team-hd-arr">'+(isOpen?"▲ Zavrit":"▼ Upravit")+'</span>':"");
   hd.dataset.tid=tid;
   hd.addEventListener("click",function(){
@@ -613,12 +619,12 @@ function makeTeam(ds,type,idx,slot,conf,se,mn,mx,lbl){
   card.appendChild(hd);
   if(!isOpen)return card;
   var bd=document.createElement("div");bd.className="team-bd";
-  var tagsLbl=document.createElement("div");tagsLbl.className="pick-lbl";tagsLbl.textContent="Hraci v tymu ("+slotArr.length+"/"+mx+"):";
+  var tagsLbl=document.createElement("div");tagsLbl.className="pick-lbl";tagsLbl.textContent="Hraci v tymu ("+slot.length+"/"+mx+"):";
   bd.appendChild(tagsLbl);
   var tagsDiv=document.createElement("div");tagsDiv.className="team-tags";
-  if(slotArr.length===0){tagsDiv.innerHTML='<span style="color:var(--M);font-style:italic;font-size:0.8rem">Zatim zadni</span>';}
+  if(slot.length===0){tagsDiv.innerHTML='<span style="color:var(--M);font-style:italic;font-size:0.8rem">Zatim zadni</span>';}
   else{
-    slotArr.forEach(function(p,pi){
+    slot.forEach(function(p,pi){
       var tag=document.createElement("div");tag.className="ttag";
       var nm=document.createElement("span");nm.textContent=p;
       var del=document.createElement("button");del.className="ttag-del";del.textContent="x";
@@ -628,12 +634,12 @@ function makeTeam(ds,type,idx,slot,conf,se,mn,mx,lbl){
     });
   }
   bd.appendChild(tagsDiv);
-  if(slotArr.length<mx){
+  if(slot.length<mx){
     var pickLbl=document.createElement("div");pickLbl.className="pick-lbl";pickLbl.style.marginTop="8px";pickLbl.textContent="Klikni na hrace pro pridani:";
     bd.appendChild(pickLbl);
     var pg=document.createElement("div");pg.className="pick-grid";
     conf.forEach(function(p,ci){
-      var inThis=slotArr.indexOf(p)!==-1;
+      var inThis=slot.indexOf(p)!==-1;
       var inOther=false,otherIdx=-1;
       for(var oi=0;oi<se[type].length;oi++){if(oi!==idx&&se[type][oi].indexOf(p)!==-1){inOther=true;otherIdx=oi;break;}}
       var btn=document.createElement("button");
@@ -657,7 +663,7 @@ function makeTeam(ds,type,idx,slot,conf,se,mn,mx,lbl){
 
 window.addTeam = function(ds,type){
   var se=JSON.parse(JSON.stringify(getSeSync(ds))); // deep copy
-  se[type].push({p:[]});
+  se[type].push([]);
   cache["s_"+ds]=se; // update cache immediately FIRST
   openTeam=ds+"|"+type+"|"+(se[type].length-1);
   toast((type==="dv"?"Dvojka":"Trojka")+" pridana");
@@ -673,17 +679,17 @@ window.addToSlot = function(ds,type,idx,confIdx){
   var t=getTrSync(ds),se=JSON.parse(JSON.stringify(getSeSync(ds))),mx=type==="dv"?3:4;
   var conf=(t.conf||[]).concat(t.confT||[]);
   var p=conf[confIdx];if(!p)return;
-  if(se[type][idx].p.length>=mx){toast("Tym je plny!");return;}
-  if(se[type][idx].p.indexOf(p)!==-1){toast(p+" uz v tymu");return;}
-  for(var i=0;i<se[type].length;i++){if(i!==idx&&se[type][i].p.indexOf(p)!==-1){toast(p+" uz hraje v jiném tymu");return;}}
-  se[type][idx].p.push(p);
+  if(se[type][idx].length>=mx){toast("Tym je plny!");return;}
+  if(se[type][idx].indexOf(p)!==-1){toast(p+" uz v tymu");return;}
+  for(var i=0;i<se[type].length;i++){if(i!==idx&&se[type][i].indexOf(p)!==-1){toast(p+" uz hraje v jiném tymu");return;}}
+  se[type][idx].push(p);
   cache["s_"+ds]=se;
   toast(p+" pridan");
   drawSestavy();
   dbSet("s_"+ds,se);
 };
 window.rmFromSlot = async function(ds,type,idx,pi){
-  var se=JSON.parse(JSON.stringify(getSeSync(ds)));se[type][idx].p.splice(pi,1);
+  var se=JSON.parse(JSON.stringify(getSeSync(ds)));se[type][idx].splice(pi,1);
   cache["s_"+ds]=se;drawSestavy();dbSet("s_"+ds,se);toast("Hrac odebran");
 };
 
