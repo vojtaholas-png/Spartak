@@ -1227,7 +1227,25 @@ document.getElementById("pw").addEventListener("keydown",function(e){if(e.key===
 
 chgW(0); // set week label only
 
-
+onSnapshot(collection(db, 'spartak'), function(snapshot) {
+  snapshot.docChanges().forEach(function(change) {
+    var id = change.doc.id;
+    var t = pendingWrites[id];
+    if(!t || (Date.now()-t > 5000)) {
+      cache[id] = change.doc.exists() ? change.doc.data().v : null;
+    }
+  });
+  if(!appReady) {
+    appReady = true;
+    drawTreninky();
+    return;
+  }
+  if(activePage === 'treninky') drawTreninky();
+  if(activePage === 'sestavy') drawSestavy();
+  if(activePage === 'hraci') drawHraci();
+  if(activePage === 'soust') drawSoust();
+  if(activePage === 'zapasy') drawZapasy();
+});
 </script>
 </body>
 </html>
