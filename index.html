@@ -167,6 +167,8 @@ body{font-family:'Barlow',sans-serif;background:var(--BG);color:var(--T);min-hei
     <div id="trList"><div class="loading">Nacitam data...</div></div>
   </div>
   <div class="page" id="pg-sestavy">
+    <div id="debugInfo" style="background:#1e293b;color:#4ade80;font-size:0.7rem;padding:10px;border-radius:8px;margin-bottom:10px;font-family:monospace;white-space:pre-wrap;display:none"></div>
+    <button onclick="showDebug()" style="margin-bottom:10px;padding:6px 14px;background:#1e293b;color:#4ade80;border:none;border-radius:8px;font-size:0.75rem;cursor:pointer">🔍 Debug info</button>
     <div class="wk"><h2 id="wkl2"></h2><div class="wk-nav">
       <button class="wkb" id="wk2-prev">&#9664; Pred.</button>
       <button class="wkb" id="wk2-dnes">Dnes</button>
@@ -553,6 +555,11 @@ function drawSestavy() {
     var title=document.createElement("div");title.className="se-day-title";
     title.textContent=dayFull(dt)+" – "+dateStr(dt)+(conf.length>0?" ("+conf.length+" potvrzenych)":"");
     section.appendChild(title);
+    // Debug info - show what key is used and what data is in cache
+    var dbg=document.createElement("div");
+    dbg.style.cssText="font-size:0.65rem;color:#94a3b8;margin-bottom:6px;font-family:monospace;";
+    dbg.textContent="key: s_"+ds+" | dv:"+se.dv.length+" tr3:"+se.tr3.length+" | cache keys: "+Object.keys(cache).filter(function(k){return k.startsWith("s_");}).join(", ");
+    section.appendChild(dbg);
     if(!unlocked){var ln=document.createElement("div");ln.className="lock-note";ln.innerHTML="🔒 Klikni na <b>Sestava</b> vpravo nahore pro editaci.";section.appendChild(ln);}
     // Always show existing teams, even if no confirmed players
     var hasTeams = se.dv.length>0 || se.tr3.length>0;
@@ -909,6 +916,32 @@ function drawZapasy() {
 }
 
 var appReady = false;
+
+window.showDebug = async function() {
+  var d = document.getElementById("debugInfo");
+  d.style.display = d.style.display==="none" ? "block" : "none";
+  if(d.style.display==="none") return;
+  
+  // Show what's in cache
+  var cacheKeys = Object.keys(cache).filter(function(k){return k.startsWith("s_");});
+  var txt = "=== CACHE (sestavy) ===\n";
+  cacheKeys.forEach(function(k){ txt += k+": "+JSON.stringify(cache[k])+"\n"; });
+  
+  // Fetch directly from Firebase
+  txt += "\n=== FIREBASE (sestavy) ===\n";
+  try {
+    var snap = await getDocs(collection(db, "spartak"));
+    snap.forEach(function(d2){
+      if(d2.id.startsWith("s_")) txt += d2.id+": "+JSON.stringify(d2.data().v)+"\n";
+    });
+  } catch(e) { txt += "Error: "+e.message; }
+  
+  // Show current week dates
+  txt += "\n=== WEEK DATES ===\n";
+  weekDates(weekOff).forEach(function(dt){ txt += toDs(dt)+"\n"; });
+  
+  d.textContent = txt;
+};
 // INIT - attach all event listeners
 document.querySelectorAll(".nav-btn[data-page]").forEach(function(btn){
   btn.addEventListener("click",function(){ goTo(this.dataset.page); });
