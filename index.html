@@ -225,7 +225,7 @@ body{font-family:'Barlow',sans-serif;background:var(--BG);color:var(--T);min-hei
 <!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB_BagFO5mf-qDwBVrVbxULXBD9tv0cjVQ",
@@ -253,57 +253,40 @@ var pendingWrites = {};
 async function dbSet(docId, val) {
   cache[docId] = val;
   pendingWrites[docId] = Date.now();
-  // Serialize nested arrays for Firestore (can't store [[]] natively)
   var toStore = val;
   if(val && typeof val === "object" && ("dv" in val || "tr3" in val)) {
-    toStore = {
-      dv: JSON.stringify(val.dv||[]),
-      tr3: JSON.stringify(val.tr3||[])
-    };
+    toStore = { dv: JSON.stringify(val.dv||[]), tr3: JSON.stringify(val.tr3||[]) };
   } else if(val && typeof val === "object" && "treninky" in val) {
-    // Soustredeni main data - serialize treninky nested arrays
     var trSer = {};
     Object.keys(val.treninky||{}).forEach(function(k) {
-      trSer[k] = {
-        dv: JSON.stringify((val.treninky[k]||{}).dv||[]),
-        tr3: JSON.stringify((val.treninky[k]||{}).tr3||[])
-      };
+      trSer[k] = { dv: JSON.stringify((val.treninky[k]||{}).dv||[]), tr3: JSON.stringify((val.treninky[k]||{}).tr3||[]) };
     });
     toStore = { conf: val.conf||[], treninky: trSer };
   }
   setDoc(doc(db, "spartak", docId), {v: toStore});
 }
 
-function isPending(docId) {
-  var t = pendingWrites[docId];
-  if(!t) return false;
-  if(Date.now() - t > 5000) { delete pendingWrites[docId]; return false; }
-  return true;
-}
-
-// Initial load - get ALL data at once
-getDocs(collection(db, "spartak")).then(function(snapshot) {
-  snapshot.forEach(function(d) { cache[d.id] = d.data().v; });
-  drawTreninky();
-  appReady = true;
-});
-
-// Real-time updates from other users
+// onSnapshot fires immediately with ALL existing data, then tracks changes
 onSnapshot(collection(db, "spartak"), function(snapshot) {
-  if(!appReady) return; // wait for initial load
-  var needRedraw = false;
   snapshot.docChanges().forEach(function(change) {
     var id = change.doc.id;
-    if(!isPending(id)) {
+    var t = pendingWrites[id];
+    var pending = t && (Date.now()-t < 5000);
+    if(!pending) {
       cache[id] = change.doc.exists() ? change.doc.data().v : null;
-      needRedraw = true;
     }
   });
-  if(needRedraw) {
-    if(activePage === "treninky") drawTreninky();
-    if(activePage === "sestavy") drawSestavy();
-    if(activePage === "hraci") drawHraci();
+  if(!appReady) {
+    // First snapshot = initial load complete
+    appReady = true;
+    drawTreninky();
+    return;
   }
+  if(activePage === "treninky") drawTreninky();
+  if(activePage === "sestavy") drawSestavy();
+  if(activePage === "hraci") drawHraci();
+  if(activePage === "soust") drawSoust();
+  if(activePage === "zapasy") drawZapasy();
 });
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -1265,12 +1248,7 @@ document.getElementById("pw").addEventListener("keydown",function(e){if(e.key===
 
 chgW(0); // set week label only
 
-// Load all Firebase data then draw
-getDocs(collection(db, "spartak")).then(function(snapshot) {
-  snapshot.forEach(function(d) { cache[d.id] = d.data().v; });
-  drawTreninky();
-  appReady = true;
-});
+
 </script>
 </body>
 </html>
