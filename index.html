@@ -242,6 +242,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+window.addEventListener('unhandledrejection', function(e) {
+  document.getElementById('trList').innerHTML = '<div style="padding:20px;color:red;font-family:monospace">PROMISE ERROR: ' + e.reason + '</div>';
+});
+
+try {
+
 // ── DATA HELPERS ──────────────────────────────────────────────────────────────
 var cache = {}; // local cache of all data
 
@@ -1229,6 +1235,10 @@ document.getElementById("modal").addEventListener("click",function(e){if(e.targe
 document.getElementById("pw").addEventListener("keydown",function(e){if(e.key==="Enter")checkPw();});
 
 chgW(0); // set week label only
+
+} catch(e) {
+  document.getElementById('trList').innerHTML = '<div style="padding:20px;color:red;font-family:monospace">INIT ERROR on line ' + e.lineNumber + ': ' + e.message + '<br>' + e.stack + '</div>';
+}
 
 onSnapshot(collection(db, 'spartak'), function(snapshot) {
   document.getElementById('trList').innerHTML = '<div style="padding:20px;color:green;font-weight:bold">Firebase OK! Docs: ' + snapshot.size + ', appReady: ' + appReady + '</div>';
