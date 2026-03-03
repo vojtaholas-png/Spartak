@@ -1231,6 +1231,7 @@ document.getElementById("pw").addEventListener("keydown",function(e){if(e.key===
 chgW(0); // set week label only
 
 onSnapshot(collection(db, 'spartak'), function(snapshot) {
+  document.getElementById('trList').innerHTML = '<div style="padding:20px;color:green;font-weight:bold">Firebase OK! Docs: ' + snapshot.size + ', appReady: ' + appReady + '</div>';
   snapshot.docChanges().forEach(function(change) {
     var id = change.doc.id;
     var t = pendingWrites[id];
@@ -1248,6 +1249,8 @@ onSnapshot(collection(db, 'spartak'), function(snapshot) {
   if(activePage === 'hraci') drawHraci();
   if(activePage === 'soust') drawSoust();
   if(activePage === 'zapasy') drawZapasy();
+}, function(error) {
+  document.getElementById('trList').innerHTML = '<div style="padding:20px;color:red;font-weight:bold">onSnapshot ERROR: ' + error.message + '</div>';
 });
 </script>
 </body>
