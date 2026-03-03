@@ -124,27 +124,6 @@ body{font-family:'Barlow',sans-serif;background:var(--BG);color:var(--T);min-hei
 .zap-time{font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;color:var(--M);}
 .zap-note{font-size:0.72rem;background:#fef9c3;color:#854d0e;border-radius:6px;padding:2px 8px;font-weight:600;}
 .zap-past{opacity:0.55;}
-.soust-hdr{background:linear-gradient(135deg,#7c3aed,#a855f7);border-radius:13px;padding:14px 18px;margin-bottom:14px;color:#fff;}
-.soust-hdr h2{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:0.07em;color:#f0abfc;}
-.soust-hdr p{font-size:0.75rem;opacity:0.75;margin-top:3px;font-family:'Barlow Condensed',sans-serif;letter-spacing:0.1em;}
-.soust-tr-card{background:#fff;border-radius:13px;box-shadow:0 2px 12px rgba(0,0,0,0.07);margin-bottom:12px;overflow:hidden;}
-.soust-tr-head{background:linear-gradient(135deg,#6d28d9,#7c3aed);padding:11px 16px;display:flex;align-items:center;justify-content:space-between;}
-.soust-tr-head .dy{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:#f0abfc;letter-spacing:0.06em;}
-.soust-tr-head .tm{background:rgba(255,255,255,0.2);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.85rem;padding:3px 10px;border-radius:12px;}
-.soust-tr-body{padding:13px 16px;}
-.soust-conf-section{margin-bottom:10px;}
-.soust-team-section{margin-top:10px;}
-.soust-notes{width:100%;border:1.5px solid var(--GR);border-radius:8px;padding:8px 10px;font-size:0.82rem;outline:none;font-family:'Barlow',sans-serif;resize:vertical;min-height:55px;color:var(--T);margin-top:8px;}
-.soust-notes:focus{border-color:#7c3aed;}
-.soust-notes-display{font-size:0.8rem;color:var(--M);margin-top:6px;font-style:italic;border-left:3px solid #e9d5ff;padding-left:8px;}
-.soust-chip{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:9px;border:2px solid var(--GR);background:var(--BG);cursor:pointer;user-select:none;}
-.soust-chip:hover{border-color:#d8b4fe;background:#faf5ff;}
-.soust-chip.on{border-color:#7c3aed;background:#f3e8ff;}
-.soust-chip .dot{width:8px;height:8px;border-radius:50%;background:#cbd5e1;flex-shrink:0;}
-.soust-chip.on .dot{background:#7c3aed;}
-.soust-chip .nm{font-size:0.78rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.soust-add-btn{border:1.5px dashed #d8b4fe;border-radius:9px;padding:8px 16px;font-size:0.82rem;font-weight:600;cursor:pointer;background:#fff;color:#7c3aed;}
-.soust-add-btn:hover{border-color:#7c3aed;background:#faf5ff;}
 .zap-score{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;}
 .zap-score-input{width:52px;border:1.5px solid var(--GR);border-radius:8px;padding:5px 8px;font-size:1rem;font-weight:700;text-align:center;outline:none;font-family:'Bebas Neue',sans-serif;}
 .zap-score-input:focus{border-color:var(--G);}
@@ -176,7 +155,6 @@ body{font-family:'Barlow',sans-serif;background:var(--BG);color:var(--T);min-hei
   <button class="nav-btn act" id="nb-treninky" data-page="treninky">📅 Treninky</button>
   <button class="nav-btn" id="nb-sestavy" data-page="sestavy">📋 Sestavy</button>
   <button class="nav-btn" id="nb-zapasy" data-page="zapasy">⚽ Zapasy</button>
-  <button class="nav-btn" id="nb-soust" data-page="soust">🏕️ Soust.</button>
   <button class="nav-btn" id="nb-hraci" data-page="hraci">👥 Hraci</button>
 </div></div>
 <div class="main">
@@ -196,9 +174,6 @@ body{font-family:'Barlow',sans-serif;background:var(--BG);color:var(--T);min-hei
       <button class="wkb" id="wk2-next">Pristi &#9654;</button>
     </div></div>
     <div id="seList"><div class="loading">Nacitam data...</div></div>
-  </div>
-  <div class="page" id="pg-soust">
-    <div id="soustList"></div>
   </div>
   <div class="page" id="pg-zapasy">
     <div id="zapasyList"></div>
@@ -225,7 +200,7 @@ body{font-family:'Barlow',sans-serif;background:var(--BG);color:var(--T);min-hei
 <!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB_BagFO5mf-qDwBVrVbxULXBD9tv0cjVQ",
@@ -253,20 +228,48 @@ var pendingWrites = {};
 async function dbSet(docId, val) {
   cache[docId] = val;
   pendingWrites[docId] = Date.now();
+  // Serialize nested arrays for Firestore (can't store [[]] natively)
   var toStore = val;
   if(val && typeof val === "object" && ("dv" in val || "tr3" in val)) {
-    toStore = { dv: JSON.stringify(val.dv||[]), tr3: JSON.stringify(val.tr3||[]) };
-  } else if(val && typeof val === "object" && "treninky" in val) {
-    var trSer = {};
-    Object.keys(val.treninky||{}).forEach(function(k) {
-      trSer[k] = { dv: JSON.stringify((val.treninky[k]||{}).dv||[]), tr3: JSON.stringify((val.treninky[k]||{}).tr3||[]) };
-    });
-    toStore = { conf: val.conf||[], treninky: trSer };
+    toStore = {
+      dv: JSON.stringify(val.dv||[]),
+      tr3: JSON.stringify(val.tr3||[])
+    };
   }
   setDoc(doc(db, "spartak", docId), {v: toStore});
 }
 
+function isPending(docId) {
+  var t = pendingWrites[docId];
+  if(!t) return false;
+  if(Date.now() - t > 5000) { delete pendingWrites[docId]; return false; }
+  return true;
+}
 
+// Initial load - get ALL data at once
+getDocs(collection(db, "spartak")).then(function(snapshot) {
+  snapshot.forEach(function(d) { cache[d.id] = d.data().v; });
+  drawTreninky();
+  appReady = true;
+});
+
+// Real-time updates from other users
+onSnapshot(collection(db, "spartak"), function(snapshot) {
+  if(!appReady) return; // wait for initial load
+  var needRedraw = false;
+  snapshot.docChanges().forEach(function(change) {
+    var id = change.doc.id;
+    if(!isPending(id)) {
+      cache[id] = change.doc.exists() ? change.doc.data().v : null;
+      needRedraw = true;
+    }
+  });
+  if(needRedraw) {
+    if(activePage === "treninky") drawTreninky();
+    if(activePage === "sestavy") drawSestavy();
+    if(activePage === "hraci") drawHraci();
+  }
+});
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 window.HESLO = "spartak1997";
@@ -340,7 +343,6 @@ window.goTo = function(page) {
   if(page==="treninky")drawTreninky();
   if(page==="sestavy")drawSestavy();
   if(page==="zapasy")drawZapasy();
-  if(page==="soust")drawSoust();
   if(page==="hraci")drawHraci();
 };
 window.chgW = function(dir) {
@@ -754,8 +756,6 @@ window.handleLock = function(){
     document.getElementById("lockBtn").classList.remove("on");
     if(activePage==="sestavy")drawSestavy();
     if(activePage==="hraci")drawHraci();
-    if(activePage==="zapasy")drawZapasy();
-    if(activePage==="soust")drawSoust();
     toast("Sestavy zamceny");
   } else {
     document.getElementById("modal").classList.add("open");
@@ -774,8 +774,6 @@ window.checkPw = function(){
     document.getElementById("lockBtn").classList.add("on");
     if(activePage==="sestavy")drawSestavy();
     if(activePage==="hraci")drawHraci();
-    if(activePage==="zapasy")drawZapasy();
-    if(activePage==="soust")drawSoust();
     drawTreninky();
     toast("Sestavy odemceny");
   } else {
@@ -930,258 +928,6 @@ function drawZapasy() {
   });
 }
 
-var SOUST_TRENINKY = [
-  {id:"soust_ct", den:"Ctvrtek", datum:"12.3.2026", cas:"14:00–16:00"},
-  {id:"soust_pa1", den:"Patek", datum:"13.3.2026", cas:"10:00–12:00"},
-  {id:"soust_pa2", den:"Patek", datum:"13.3.2026", cas:"15:00–17:00"},
-  {id:"soust_so1", den:"Sobota", datum:"14.3.2026", cas:"10:00–12:00"},
-  {id:"soust_so2", den:"Sobota", datum:"14.3.2026", cas:"15:00–17:00"},
-  {id:"soust_ne", den:"Nedele", datum:"15.3.2026", cas:"10:00–12:00"}
-];
-
-var SOUST_EXTRA = ["David Rysavy","Filip Seidl","Michal Bares"];
-
-function getSoustPlayers() {
-  var all = getPlayersSync().slice();
-  SOUST_EXTRA.forEach(function(p){ if(all.indexOf(p)===-1) all.push(p); });
-  return all;
-}
-
-function getSoustData() {
-  var v = cache["soust_main"];
-  if(!v) return {conf:[], treninky:{}};
-  // Deserialize treninky nested arrays
-  var treninky = {};
-  Object.keys(v.treninky||{}).forEach(function(k) {
-    var t = v.treninky[k]||{};
-    treninky[k] = {
-      dv: typeof t.dv==="string" ? JSON.parse(t.dv) : (t.dv||[]),
-      tr3: typeof t.tr3==="string" ? JSON.parse(t.tr3) : (t.tr3||[])
-    };
-  });
-  return {conf: v.conf||[], treninky: treninky};
-}
-
-function drawSoust() {
-  var cont = document.getElementById("soustList");
-  cont.innerHTML = "";
-  var sd = getSoustData();
-  var players = getSoustPlayers();
-
-  // Header
-  var hdr = document.createElement("div"); hdr.className = "soust-hdr";
-  hdr.innerHTML = '<h2>🏕️ SOUST&#344;ED&#282;N&#205; 2026</h2>'
-    + '<p>12. – 15. b&#345;ezna 2026 &middot; TJ Spartak &#268;el&#225;kovice</p>';
-  cont.appendChild(hdr);
-
-  // Attendance card
-  var attCard = document.createElement("div"); attCard.className = "card";
-  var attHead = document.createElement("div"); attHead.className = "c-head c-purple";
-  attHead.innerHTML = '<div><h3>Kdo jede?</h3><div class="sub">Potvrd svoji ucast jednou pro cele soustredeni</div></div>'
-    + '<div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:#f0abfc">' + (sd.conf||[]).length + '/' + players.length + '</div>';
-  attCard.appendChild(attHead);
-
-  var attBody = document.createElement("div"); attBody.className = "c-body";
-  var grid = document.createElement("div"); grid.className = "grid";
-  players.forEach(function(p) {
-    var on = (sd.conf||[]).indexOf(p) !== -1;
-    var c = document.createElement("div"); c.className = "soust-chip" + (on ? " on" : "");
-    c.dataset.player = p;
-    c.innerHTML = '<div class="dot"></div><div class="nm">' + p + '</div>';
-    c.addEventListener("click", function() { togSoustConf(this.dataset.player); });
-    grid.appendChild(c);
-  });
-  attBody.appendChild(grid);
-  attCard.appendChild(attBody);
-  cont.appendChild(attCard);
-
-  // Training cards
-  SOUST_TRENINKY.forEach(function(tr) {
-    var trData = (sd.treninky||{})[tr.id] || {dv:[], tr3:[]};
-    var card = document.createElement("div"); card.className = "soust-tr-card";
-    var head = document.createElement("div"); head.className = "soust-tr-head";
-    head.innerHTML = '<div class="dy">' + tr.den + ' &mdash; ' + tr.datum + '</div>'
-      + '<div class="tm">&#128336; ' + tr.cas + '</div>';
-    card.appendChild(head);
-
-    var body = document.createElement("div"); body.className = "soust-tr-body";
-
-    // Teams
-    var conf = sd.conf || [];
-    var hasTeams = trData.dv.length > 0 || trData.tr3.length > 0;
-    if(conf.length === 0 && !hasTeams) {
-      var nc = document.createElement("div"); nc.className = "no-conf";
-      nc.textContent = "Zadni potvrzeni hraci."; body.appendChild(nc);
-    } else {
-      trData.dv.forEach(function(slot, i) { body.appendChild(makeSoustTeam(tr.id, "dv", i, slot, conf, trData, 2, 3, "Dvojka")); });
-      trData.tr3.forEach(function(slot, i) { body.appendChild(makeSoustTeam(tr.id, "tr3", i, slot, conf, trData, 3, 4, "Trojka")); });
-    }
-
-    if(unlocked) {
-      var ar = document.createElement("div"); ar.className = "add-teams"; ar.style.marginTop = "8px";
-      var b1 = document.createElement("button"); b1.className = "soust-add-btn"; b1.textContent = "+ Pridat Dvojku";
-      b1.dataset.trid = tr.id; b1.dataset.type = "dv";
-      b1.addEventListener("click", function() { addSoustTeam(this.dataset.trid, this.dataset.type); });
-      var b2 = document.createElement("button"); b2.className = "soust-add-btn"; b2.textContent = "+ Pridat Trojku";
-      b2.dataset.trid = tr.id; b2.dataset.type = "tr3";
-      b2.addEventListener("click", function() { addSoustTeam(this.dataset.trid, this.dataset.type); });
-      ar.appendChild(b1); ar.appendChild(b2); body.appendChild(ar);
-    }
-
-    // Notes
-    var notesKey = "soust_notes_" + tr.id;
-    var notesVal = cache[notesKey] || "";
-    if(unlocked) {
-      var na = document.createElement("textarea"); na.className = "soust-notes";
-      na.placeholder = "Poznamky k treninku..."; na.value = notesVal;
-      na.dataset.key = notesKey;
-      na.addEventListener("blur", function() {
-        var k = this.dataset.key; cache[k] = this.value; dbSet(k, this.value);
-      });
-      body.appendChild(na);
-    } else if(notesVal) {
-      var nd = document.createElement("div"); nd.className = "soust-notes-display";
-      nd.textContent = "📝 " + notesVal; body.appendChild(nd);
-    }
-
-    card.appendChild(body);
-    cont.appendChild(card);
-  });
-}
-
-window.togSoustConf = function(player) {
-  var sd = JSON.parse(JSON.stringify(getSoustData()));
-  var i = (sd.conf||[]).indexOf(player);
-  if(i === -1) { sd.conf.push(player); toast(player + " potvrzen ✓"); }
-  else { sd.conf.splice(i, 1); toast(player + " odpotvzen"); }
-  cache["soust_main"] = sd;
-  dbSet("soust_main", sd);
-  drawSoust();
-};
-
-window.addSoustTeam = function(trid, type) {
-  var sd = JSON.parse(JSON.stringify(getSoustData()));
-  if(!sd.treninky) sd.treninky = {};
-  if(!sd.treninky[trid]) sd.treninky[trid] = {dv:[], tr3:[]};
-  sd.treninky[trid][type].push([]);
-  cache["soust_main"] = sd;
-  openSoustTeam = trid + "|" + type + "|" + (sd.treninky[trid][type].length - 1);
-  dbSet("soust_main", sd);
-  toast((type==="dv"?"Dvojka":"Trojka") + " pridana");
-  drawSoust();
-};
-
-window.rmSoustTeam = function(trid, type, idx) {
-  var sd = JSON.parse(JSON.stringify(getSoustData()));
-  sd.treninky[trid][type].splice(idx, 1);
-  cache["soust_main"] = sd;
-  openSoustTeam = null;
-  dbSet("soust_main", sd);
-  toast("Tym smazan"); drawSoust();
-};
-
-window.addToSoustSlot = function(trid, type, idx, player) {
-  var sd = JSON.parse(JSON.stringify(getSoustData()));
-  var slot = sd.treninky[trid][type][idx];
-  var mx = type==="dv"?3:4;
-  if(slot.length >= mx) { toast("Tym je plny!"); return; }
-  if(slot.indexOf(player) !== -1) { toast(player + " uz v tymu"); return; }
-  for(var i=0;i<sd.treninky[trid][type].length;i++) {
-    if(i!==idx && sd.treninky[trid][type][i].indexOf(player)!==-1) { toast(player+" uz v jinem tymu"); return; }
-  }
-  slot.push(player);
-  cache["soust_main"] = sd;
-  dbSet("soust_main", sd);
-  toast(player + " pridan"); drawSoust();
-};
-
-window.rmFromSoustSlot = function(trid, type, idx, pi) {
-  var sd = JSON.parse(JSON.stringify(getSoustData()));
-  sd.treninky[trid][type][idx].splice(pi, 1);
-  cache["soust_main"] = sd;
-  dbSet("soust_main", sd);
-  toast("Hrac odebran"); drawSoust();
-};
-
-var openSoustTeam = null;
-
-function makeSoustTeam(trid, type, idx, slot, conf, trData, mn, mx, lbl) {
-  var tid = trid + "|" + type + "|" + idx;
-  var isOpen = openSoustTeam === tid && unlocked;
-  var card = document.createElement("div"); card.className = "team-card" + (isOpen ? " open" : "");
-  var preview = slot.length > 0 ? slot.join(", ") + " (" + slot.length + "/" + mx + ")" : "prazdny (min " + mn + ", max " + mx + ")";
-  var hd = document.createElement("div"); hd.className = "team-hd";
-  hd.innerHTML = '<span class="team-hd-name">' + lbl + " " + (idx+1) + '</span>'
-    + '<span class="team-hd-pl" style="color:' + (slot.length>0?"var(--G)":"var(--M)") + '">' + preview + '</span>'
-    + (unlocked ? '<span class="team-hd-arr">' + (isOpen ? "▲ Zavrit" : "▼ Upravit") + '</span>' : "");
-  hd.dataset.tid = tid;
-  hd.addEventListener("click", function() {
-    if(!unlocked) return;
-    openSoustTeam = openSoustTeam === this.dataset.tid ? null : this.dataset.tid;
-    drawSoust();
-  });
-  card.appendChild(hd);
-  if(!isOpen) return card;
-
-  var bd = document.createElement("div"); bd.className = "team-bd";
-  var tagsLbl = document.createElement("div"); tagsLbl.className = "pick-lbl";
-  tagsLbl.textContent = "Hraci v tymu (" + slot.length + "/" + mx + "):";
-  bd.appendChild(tagsLbl);
-  var tagsDiv = document.createElement("div"); tagsDiv.className = "team-tags";
-  if(slot.length === 0) {
-    tagsDiv.innerHTML = '<span style="color:var(--M);font-style:italic;font-size:0.8rem">Zatim zadni</span>';
-  } else {
-    slot.forEach(function(p, pi) {
-      var tag = document.createElement("div"); tag.className = "ttag";
-      var nm = document.createElement("span"); nm.textContent = p;
-      var del = document.createElement("button"); del.className = "ttag-del"; del.textContent = "x";
-      del.dataset.trid = trid; del.dataset.type = type; del.dataset.idx = idx; del.dataset.pi = pi;
-      del.addEventListener("click", function(e) {
-        e.stopPropagation();
-        rmFromSoustSlot(this.dataset.trid, this.dataset.type, parseInt(this.dataset.idx), parseInt(this.dataset.pi));
-      });
-      tag.appendChild(nm); tag.appendChild(del); tagsDiv.appendChild(tag);
-    });
-  }
-  bd.appendChild(tagsDiv);
-
-  if(slot.length < mx) {
-    var pickLbl = document.createElement("div"); pickLbl.className = "pick-lbl"; pickLbl.style.marginTop = "8px";
-    pickLbl.textContent = "Klikni na hrace pro pridani:";
-    bd.appendChild(pickLbl);
-    var pg = document.createElement("div"); pg.className = "pick-grid";
-    conf.forEach(function(p) {
-      var inThis = slot.indexOf(p) !== -1;
-      var inOther = false, otherIdx = -1;
-      for(var oi=0;oi<trData[type].length;oi++) {
-        if(oi!==idx && trData[type][oi].indexOf(p)!==-1) { inOther=true; otherIdx=oi; break; }
-      }
-      var btn = document.createElement("button");
-      if(inThis) { btn.className="pbtn in-this"; btn.textContent="✓ "+p; btn.disabled=true; }
-      else if(inOther) { btn.className="pbtn in-other"; btn.textContent=p+" ("+(type==="dv"?"D":"T")+(otherIdx+1)+")"; btn.disabled=true; }
-      else {
-        btn.className="pbtn"; btn.textContent=p;
-        btn.dataset.trid=trid; btn.dataset.type=type; btn.dataset.idx=idx; btn.dataset.player=p;
-        btn.addEventListener("click", function() {
-          addToSoustSlot(this.dataset.trid, this.dataset.type, parseInt(this.dataset.idx), this.dataset.player);
-        });
-      }
-      pg.appendChild(btn);
-    });
-    bd.appendChild(pg);
-  } else {
-    var fp = document.createElement("p"); fp.style.cssText="color:var(--G);font-size:0.82rem;font-weight:600;margin:8px 0";
-    fp.textContent = "Tym je plny!"; bd.appendChild(fp);
-  }
-  var delBtn = document.createElement("button"); delBtn.className = "btn-del"; delBtn.style.marginTop = "8px";
-  delBtn.textContent = "Smazat tym";
-  delBtn.dataset.trid = trid; delBtn.dataset.type = type; delBtn.dataset.idx = idx;
-  delBtn.addEventListener("click", function() { rmSoustTeam(this.dataset.trid, this.dataset.type, parseInt(this.dataset.idx)); });
-  bd.appendChild(delBtn);
-  card.appendChild(bd);
-  return card;
-}
-
 var appReady = false;
 
 window.showDebug = async function() {
@@ -1226,26 +972,6 @@ document.getElementById("modal").addEventListener("click",function(e){if(e.targe
 document.getElementById("pw").addEventListener("keydown",function(e){if(e.key==="Enter")checkPw();});
 
 chgW(0); // set week label only
-
-onSnapshot(collection(db, 'spartak'), function(snapshot) {
-  snapshot.docChanges().forEach(function(change) {
-    var id = change.doc.id;
-    var t = pendingWrites[id];
-    if(!t || (Date.now()-t > 5000)) {
-      cache[id] = change.doc.exists() ? change.doc.data().v : null;
-    }
-  });
-  if(!appReady) {
-    appReady = true;
-    drawTreninky();
-    return;
-  }
-  if(activePage === 'treninky') drawTreninky();
-  if(activePage === 'sestavy') drawSestavy();
-  if(activePage === 'hraci') drawHraci();
-  if(activePage === 'soust') drawSoust();
-  if(activePage === 'zapasy') drawZapasy();
-});
 </script>
 </body>
 </html>
