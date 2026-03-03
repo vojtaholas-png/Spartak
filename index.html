@@ -199,7 +199,7 @@ body{font-family:'Barlow',sans-serif;background:var(--BG);color:var(--T);min-hei
 <!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB_BagFO5mf-qDwBVrVbxULXBD9tv0cjVQ",
@@ -222,28 +222,39 @@ async function dbGet(docId) {
   cache[docId] = snap.exists() ? snap.data().v : null;
   return cache[docId];
 }
-var pendingWrites = {}; // track keys we just wrote
+var pendingWrites = {};
 
 async function dbSet(docId, val) {
   cache[docId] = val;
-  pendingWrites[docId] = true; // mark as pending
-  await setDoc(doc(db, "spartak", docId), {v: val});
-  // Keep pending for 3s after write completes
-  setTimeout(function(){ delete pendingWrites[docId]; }, 3000);
+  pendingWrites[docId] = Date.now();
+  setDoc(doc(db, "spartak", docId), {v: val});
 }
 
-// Listen for real-time changes
+function isPending(docId) {
+  var t = pendingWrites[docId];
+  if(!t) return false;
+  if(Date.now() - t > 5000) { delete pendingWrites[docId]; return false; }
+  return true;
+}
+
+// Initial load - get ALL data at once
+getDocs(collection(db, "spartak")).then(function(snapshot) {
+  snapshot.forEach(function(d) { cache[d.id] = d.data().v; });
+  drawTreninky();
+  appReady = true;
+});
+
+// Real-time updates from other users
 onSnapshot(collection(db, "spartak"), function(snapshot) {
+  if(!appReady) return; // wait for initial load
   var needRedraw = false;
   snapshot.docChanges().forEach(function(change) {
     var id = change.doc.id;
-    if(!pendingWrites[id]) {
-      var val = change.doc.exists() ? change.doc.data().v : null;
-      cache[id] = val;
+    if(!isPending(id)) {
+      cache[id] = change.doc.exists() ? change.doc.data().v : null;
       needRedraw = true;
     }
   });
-  // Always redraw when data changes (including initial load)
   if(needRedraw) {
     if(activePage === "treninky") drawTreninky();
     if(activePage === "sestavy") drawSestavy();
@@ -914,8 +925,7 @@ document.getElementById("modalPrihlasit").addEventListener("click",checkPw);
 document.getElementById("modal").addEventListener("click",function(e){if(e.target.id==="modal")closeModal();});
 document.getElementById("pw").addEventListener("keydown",function(e){if(e.key==="Enter")checkPw();});
 
-chgW(0);
-drawTreninky(); appReady = true;
+chgW(0); // set week label only
 </script>
 </body>
 </html>
