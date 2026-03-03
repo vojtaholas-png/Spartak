@@ -266,28 +266,7 @@ async function dbSet(docId, val) {
   setDoc(doc(db, "spartak", docId), {v: toStore});
 }
 
-// onSnapshot fires immediately with ALL existing data, then tracks changes
-onSnapshot(collection(db, "spartak"), function(snapshot) {
-  snapshot.docChanges().forEach(function(change) {
-    var id = change.doc.id;
-    var t = pendingWrites[id];
-    var pending = t && (Date.now()-t < 5000);
-    if(!pending) {
-      cache[id] = change.doc.exists() ? change.doc.data().v : null;
-    }
-  });
-  if(!appReady) {
-    // First snapshot = initial load complete
-    appReady = true;
-    drawTreninky();
-    return;
-  }
-  if(activePage === "treninky") drawTreninky();
-  if(activePage === "sestavy") drawSestavy();
-  if(activePage === "hraci") drawHraci();
-  if(activePage === "soust") drawSoust();
-  if(activePage === "zapasy") drawZapasy();
-});
+
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 window.HESLO = "spartak1997";
