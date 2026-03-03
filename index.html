@@ -234,22 +234,20 @@ async function dbSet(docId, val) {
 
 // Listen for real-time changes
 onSnapshot(collection(db, "spartak"), function(snapshot) {
-  // Only update cache for keys we didn't just write
-  if(appReady) {
-    var needRedraw = false;
-    snapshot.docChanges().forEach(function(change) {
-      var id = change.doc.id;
-      if(!pendingWrites[id]) { // only update if WE didn't write it
-        var val = change.doc.exists() ? change.doc.data().v : null;
-        cache[id] = val;
-        needRedraw = true;
-      }
-    });
-    if(needRedraw) {
-      if(activePage === "treninky") drawTreninky();
-      if(activePage === "sestavy") drawSestavy();
-      if(activePage === "hraci") drawHraci();
+  var needRedraw = false;
+  snapshot.docChanges().forEach(function(change) {
+    var id = change.doc.id;
+    if(!pendingWrites[id]) {
+      var val = change.doc.exists() ? change.doc.data().v : null;
+      cache[id] = val;
+      needRedraw = true;
     }
+  });
+  // Always redraw when data changes (including initial load)
+  if(needRedraw) {
+    if(activePage === "treninky") drawTreninky();
+    if(activePage === "sestavy") drawSestavy();
+    if(activePage === "hraci") drawHraci();
   }
 });
 
