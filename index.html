@@ -545,10 +545,19 @@ function drawSestavy() {
     title.textContent=dayFull(dt)+" – "+dateStr(dt)+(conf.length>0?" ("+conf.length+" potvrzenych)":"");
     section.appendChild(title);
     if(!unlocked){var ln=document.createElement("div");ln.className="lock-note";ln.innerHTML="🔒 Klikni na <b>Sestava</b> vpravo nahore pro editaci.";section.appendChild(ln);}
-    if(conf.length===0){var nc=document.createElement("div");nc.className="no-conf";nc.textContent="Zadni potvrzeni hraci.";section.appendChild(nc);}
-    else {
+    // Always show existing teams, even if no confirmed players
+    var hasTeams = se.dv.length>0 || se.tr3.length>0;
+    if(conf.length===0 && !hasTeams){
+      var nc=document.createElement("div");nc.className="no-conf";nc.textContent="Zadni potvrzeni hraci.";section.appendChild(nc);
+    } else {
       se.dv.forEach(function(slot,i){section.appendChild(makeTeam(ds,"dv",i,slot,conf,se,2,3,"Dvojka"));});
       se.tr3.forEach(function(slot,i){section.appendChild(makeTeam(ds,"tr3",i,slot,conf,se,3,4,"Trojka"));});
+      if(conf.length===0 && hasTeams){
+        var nc2=document.createElement("div");
+        nc2.style.cssText="font-size:0.78rem;color:var(--M);margin-top:6px;";
+        nc2.textContent="(Zadni potvrzeni hraci)";
+        section.appendChild(nc2);
+      }
     }
     if(unlocked){
       var ar=document.createElement("div");ar.className="add-teams";
