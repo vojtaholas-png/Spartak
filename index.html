@@ -1264,6 +1264,13 @@ document.getElementById("modal").addEventListener("click",function(e){if(e.targe
 document.getElementById("pw").addEventListener("keydown",function(e){if(e.key==="Enter")checkPw();});
 
 chgW(0); // set week label only
+
+// Load all Firebase data then draw
+getDocs(collection(db, "spartak")).then(function(snapshot) {
+  snapshot.forEach(function(d) { cache[d.id] = d.data().v; });
+  drawTreninky();
+  appReady = true;
+});
 </script>
 </body>
 </html>
