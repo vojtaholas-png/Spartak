@@ -1234,126 +1234,88 @@ function buildXlsx(players, treninky) {
   var XLSX = window.XLSX;
   var wb = XLSX.utils.book_new();
   var ws = {};
-  var maxCol = 1 + treninky.length + 2; // name + dates + total + pct
 
+  // Only past trainings from 3.3.2026 onwards
+  var todayDs = toDs(new Date());
+  treninky = treninky.filter(function(tr) { return tr.ds <= todayDs && tr.ds >= "2026-03-03"; });
+  if(treninky.length === 0) { toast("Zadne probehle treninky"); return; }
+
+  var nTr = treninky.length;
   var hoursPerTr = treninky.map(function(tr) {
     return parseHours(tr.t ? tr.t.time : null, tr.t ? tr.t.timeEnd : null);
   });
 
-  // Colors
-  var GREEN_DARK  = "1B5E20";
-  var GREEN       = "2e7d32";
-  var GREEN_LIGHT = "C8E6C9";
-  var YELLOW      = "F9C000";
-  var WHITE       = "FFFFFF";
-  var GRAY_LIGHT  = "F5F5F5";
-  var GRAY        = "E0E0E0";
-  var RED_LIGHT   = "FFEBEE";
+  // Column layout:
+  // A(0): name/label
+  // B...(1..nTr): training columns
+  // nTr+1: C. hodin (SUM)
+  // nTr+2: % Úspěšnosti
 
-  function cell(v, opts) {
-    var c = {v: v, t: typeof v === "number" ? "n" : "s"};
-    if(opts) Object.assign(c, opts);
-    return c;
-  }
-  function style(fg, bg, bold, center, numFmt, border) {
-    var s = {
-      font: {name:"Arial", sz:10, bold:!!bold, color:{rgb: fg||"000000"}},
-      fill: {patternType:"solid", fgColor:{rgb: bg||WHITE}},
-      alignment: {horizontal: center?"center":"left", vertical:"center", wrapText:false},
-      border: border ? {
-        top:{style:"thin",color:{rgb:"BDBDBD"}},
-        bottom:{style:"thin",color:{rgb:"BDBDBD"}},
-        left:{style:"thin",color:{rgb:"BDBDBD"}},
-        right:{style:"thin",color:{rgb:"BDBDBD"}}
-      } : {}
-    };
-    if(numFmt) s.z = numFmt;
+  var enc = XLSX.utils.encode_cell;
+  function col(c) { // 0-indexed -> Excel letter
+    var s=""; c++;
+    while(c>0){s=String.fromCharCode(65+(c-1)%26)+s;c=Math.floor((c-1)/26);}
     return s;
   }
+  var firstDataCol = col(1);           // B
+  var lastDataCol  = col(nTr);         // e.g. F for 5 trainings
+  var sumCol       = col(nTr+1);       // e.g. G
+  var pctCol       = col(nTr+2);       // e.g. H
 
-  var R = 0; // current row (0-indexed)
+  var R = 0;
 
-  // ROW 0: Title
-  ws[XLSX.utils.encode_cell({r:R,c:0})] = {v:"Tréninky – sezóna 2026", t:"s",
-    s: style(WHITE, GREEN_DARK, true, false)};
-  for(var ci=1; ci<maxCol; ci++) {
-    ws[XLSX.utils.encode_cell({r:R,c:ci})] = {v:"", t:"s", s: style(WHITE, GREEN_DARK, false, false)};
-  }
+  // ROW 1: Title
+  ws[enc({r:R,c:0})] = {v:"Tréninky – sezóna 2026", t:"s"};
+  for(var ci=1;ci<=nTr+2;ci++) ws[enc({r:R,c:ci})]={v:"",t:"s"};
   R++;
 
-  // ROW 1: Date headers
-  ws[XLSX.utils.encode_cell({r:R,c:0})] = {v:"Příjmení / P. Hodin", t:"s",
-    s: style(WHITE, GREEN, true, false)};
-  treninky.forEach(function(tr, i) {
-    var parts = tr.ds.split("-");
-    var label = parseInt(parts[2])+"."+parseInt(parts[1])+".";
-    ws[XLSX.utils.encode_cell({r:R,c:i+1})] = {v:label, t:"s",
-      s: style(WHITE, GREEN, true, true)};
+  // ROW 2: Date headers
+  ws[enc({r:R,c:0})] = {v:"Příjmení / P. Hodin", t:"s"};
+  treninky.forEach(function(tr,i){
+    var p=tr.ds.split("-");
+    ws[enc({r:R,c:i+1})]={v:parseInt(p[2])+"."+parseInt(p[1])+".",t:"s"};
   });
-  ws[XLSX.utils.encode_cell({r:R,c:treninky.length+1})] = {v:"", t:"s", s: style(WHITE,GREEN,false,false)};
-  ws[XLSX.utils.encode_cell({r:R,c:treninky.length+2})] = {v:"C. hodin", t:"s",
-    s: style(YELLOW, GREEN, true, true)};
-  ws[XLSX.utils.encode_cell({r:R,c:treninky.length+3})] = {v:"% Úspěšnosti", t:"s",
-    s: style(YELLOW, GREEN, true, true)};
-  maxCol = treninky.length + 4;
+  ws[enc({r:R,c:nTr+1})]={v:"C. hodin",t:"s"};
+  ws[enc({r:R,c:nTr+2})]={v:"% Úspěšnosti",t:"s"};
   R++;
 
-  // ROW 2: Hours per training
-  ws[XLSX.utils.encode_cell({r:R,c:0})] = {v:"", t:"s", s: style("000000",GRAY,false,false)};
-  hoursPerTr.forEach(function(h, i) {
-    ws[XLSX.utils.encode_cell({r:R,c:i+1})] = {v:h, t:"n",
-      s: style(GREEN_DARK, GRAY, true, true, "0.##")};
+  // ROW 3: Hours per training + SUM
+  ws[enc({r:R,c:0})]={v:"P. Hodin",t:"s"};
+  hoursPerTr.forEach(function(h,i){
+    ws[enc({r:R,c:i+1})]={v:h,t:"n"};
   });
-  ws[XLSX.utils.encode_cell({r:R,c:treninky.length+1})] = {v:"", t:"s", s:style("000000",GRAY,false,false)};
-  ws[XLSX.utils.encode_cell({r:R,c:treninky.length+2})] = {v:"", t:"s", s:style("000000",GRAY,false,false)};
-  ws[XLSX.utils.encode_cell({r:R,c:treninky.length+3})] = {v:"", t:"s", s:style("000000",GRAY,false,false)};
+  // SUM of all training hours = total possible
+  ws[enc({r:R,c:nTr+1})]={f:"SUM("+firstDataCol+"3:"+lastDataCol+"3)",t:"n"};
+  ws[enc({r:R,c:nTr+2})]={v:"",t:"s"};
   R++;
 
-  // Player rows
-  players.forEach(function(player, pi) {
-    var rowBg = pi % 2 === 0 ? WHITE : GRAY_LIGHT;
-    var totalHours = 0;
-    var totalPossible = 0;
-    ws[XLSX.utils.encode_cell({r:R,c:0})] = {v:player, t:"s",
-      s: style("000000", rowBg, false, false)};
-    treninky.forEach(function(tr, i) {
-      var t = tr.t || {};
-      var conf = (t.conf||[]).concat(t.confT||[]);
-      var wasHere = conf.indexOf(player) !== -1;
-      var h = hoursPerTr[i];
-      totalPossible += h;
-      if(wasHere) totalHours += h;
-      var val = wasHere ? h : 0;
-      var bg = wasHere ? GREEN_LIGHT : (h > 0 ? RED_LIGHT : rowBg);
-      ws[XLSX.utils.encode_cell({r:R,c:i+1})] = {v:val, t:"n",
-        s: style(wasHere ? GREEN_DARK : "B71C1C", bg, false, true, "0.##")};
+  // ROW 4+: Players
+  players.forEach(function(player){
+    var exRow = R+1;
+    ws[enc({r:R,c:0})]={v:player,t:"s"};
+    treninky.forEach(function(tr,i){
+      var t=tr.t||{};
+      var conf=(t.conf||[]).concat(t.confT||[]);
+      var wasHere=conf.indexOf(player)!==-1;
+      ws[enc({r:R,c:i+1})]={v:wasHere?hoursPerTr[i]:0,t:"n"};
     });
-    ws[XLSX.utils.encode_cell({r:R,c:treninky.length+1})] = {v:"", t:"s", s:style("000000",rowBg,false,false)};
-    ws[XLSX.utils.encode_cell({r:R,c:treninky.length+2})] = {v:totalHours, t:"n",
-      s: style(GREEN_DARK, rowBg, true, true, "0.##")};
-    var pct = totalPossible > 0 ? totalHours/totalPossible : 0;
-    var pctBg = pct >= 0.75 ? GREEN_LIGHT : pct >= 0.5 ? "FFF9C4" : RED_LIGHT;
-    ws[XLSX.utils.encode_cell({r:R,c:treninky.length+3})] = {v:pct, t:"n",
-      s: style("000000", pctBg, true, true, "0%")};
+    // C. hodin = SUM(B4:F4)
+    ws[enc({r:R,c:nTr+1})]={f:"SUM("+firstDataCol+exRow+":"+lastDataCol+exRow+")",t:"n"};
+    // % = IF(G3>0, G4/G3, 0)
+    ws[enc({r:R,c:nTr+2})]={f:"IF("+sumCol+"3>0,"+sumCol+exRow+"/"+sumCol+"3,0)",t:"n",z:"0%"};
     R++;
   });
 
-  // Set range
-  ws["!ref"] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:R-1,c:maxCol-1}});
+  ws["!ref"]=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:R-1,c:nTr+2}});
 
   // Column widths
-  var cols = [{wch:20}];
-  treninky.forEach(function(){ cols.push({wch:7}); });
-  cols.push({wch:3}, {wch:9}, {wch:14});
-  ws["!cols"] = cols;
+  var cols=[{wch:22}];
+  treninky.forEach(function(){cols.push({wch:7});});
+  cols.push({wch:11},{wch:14});
+  ws["!cols"]=cols;
 
-  // Row heights
-  var rows = [{hpt:22}, {hpt:20}, {hpt:18}];
-  players.forEach(function(){ rows.push({hpt:18}); });
-  ws["!rows"] = rows;
-
-  // Merge title row
-  ws["!merges"] = [{s:{r:0,c:0}, e:{r:0,c:maxCol-1}}];
+  // Merge title
+  ws["!merges"]=[{s:{r:0,c:0},e:{r:0,c:nTr+2}}];
 
   XLSX.utils.book_append_sheet(wb, ws, "Docházka 2026");
   XLSX.writeFile(wb, "dochazka_spartak_2026.xlsx");
