@@ -1220,71 +1220,144 @@ function getAllTrainingDates() {
 function exportDochazka() {
   var players = getPlayersSync();
   var treninky = getAllTrainingDates();
-  
-  if(treninky.length === 0) {
-    toast("Zadne treninky k exportu");
-    return;
-  }
+  if(treninky.length === 0) { toast("Zadne treninky k exportu"); return; }
 
-  // Build CSV
-  var rows = [];
-  
-  // Header row 1: title
-  var dateHeaders = treninky.map(function(tr) {
-    var parts = tr.ds.split("-");
-    return parseInt(parts[2])+"."+parseInt(parts[1])+".";
-  });
-  rows.push(["Tréninky - sezóna 2026"].concat(dateHeaders).concat(["", "C. hodin", "% Úspěšnosti"]));
-  
-  // Header row 2: hours per training
+  // Load SheetJS dynamically
+  var script = document.createElement("script");
+  script.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+  script.onload = function() { buildXlsx(players, treninky); };
+  document.head.appendChild(script);
+  toast("Pripravuji Excel...");
+}
+
+function buildXlsx(players, treninky) {
+  var XLSX = window.XLSX;
+  var wb = XLSX.utils.book_new();
+  var ws = {};
+  var maxCol = 1 + treninky.length + 2; // name + dates + total + pct
+
   var hoursPerTr = treninky.map(function(tr) {
     return parseHours(tr.t ? tr.t.time : null, tr.t ? tr.t.timeEnd : null);
   });
-  rows.push(["Příjmení / P. Hodin"].concat(hoursPerTr).concat(["", "", ""]));
-  
+
+  // Colors
+  var GREEN_DARK  = "1B5E20";
+  var GREEN       = "2e7d32";
+  var GREEN_LIGHT = "C8E6C9";
+  var YELLOW      = "F9C000";
+  var WHITE       = "FFFFFF";
+  var GRAY_LIGHT  = "F5F5F5";
+  var GRAY        = "E0E0E0";
+  var RED_LIGHT   = "FFEBEE";
+
+  function cell(v, opts) {
+    var c = {v: v, t: typeof v === "number" ? "n" : "s"};
+    if(opts) Object.assign(c, opts);
+    return c;
+  }
+  function style(fg, bg, bold, center, numFmt, border) {
+    var s = {
+      font: {name:"Arial", sz:10, bold:!!bold, color:{rgb: fg||"000000"}},
+      fill: {patternType:"solid", fgColor:{rgb: bg||WHITE}},
+      alignment: {horizontal: center?"center":"left", vertical:"center", wrapText:false},
+      border: border ? {
+        top:{style:"thin",color:{rgb:"BDBDBD"}},
+        bottom:{style:"thin",color:{rgb:"BDBDBD"}},
+        left:{style:"thin",color:{rgb:"BDBDBD"}},
+        right:{style:"thin",color:{rgb:"BDBDBD"}}
+      } : {}
+    };
+    if(numFmt) s.z = numFmt;
+    return s;
+  }
+
+  var R = 0; // current row (0-indexed)
+
+  // ROW 0: Title
+  ws[XLSX.utils.encode_cell({r:R,c:0})] = {v:"Tréninky – sezóna 2026", t:"s",
+    s: style(WHITE, GREEN_DARK, true, false)};
+  for(var ci=1; ci<maxCol; ci++) {
+    ws[XLSX.utils.encode_cell({r:R,c:ci})] = {v:"", t:"s", s: style(WHITE, GREEN_DARK, false, false)};
+  }
+  R++;
+
+  // ROW 1: Date headers
+  ws[XLSX.utils.encode_cell({r:R,c:0})] = {v:"Příjmení / P. Hodin", t:"s",
+    s: style(WHITE, GREEN, true, false)};
+  treninky.forEach(function(tr, i) {
+    var parts = tr.ds.split("-");
+    var label = parseInt(parts[2])+"."+parseInt(parts[1])+".";
+    ws[XLSX.utils.encode_cell({r:R,c:i+1})] = {v:label, t:"s",
+      s: style(WHITE, GREEN, true, true)};
+  });
+  ws[XLSX.utils.encode_cell({r:R,c:treninky.length+1})] = {v:"", t:"s", s: style(WHITE,GREEN,false,false)};
+  ws[XLSX.utils.encode_cell({r:R,c:treninky.length+2})] = {v:"C. hodin", t:"s",
+    s: style(YELLOW, GREEN, true, true)};
+  ws[XLSX.utils.encode_cell({r:R,c:treninky.length+3})] = {v:"% Úspěšnosti", t:"s",
+    s: style(YELLOW, GREEN, true, true)};
+  maxCol = treninky.length + 4;
+  R++;
+
+  // ROW 2: Hours per training
+  ws[XLSX.utils.encode_cell({r:R,c:0})] = {v:"", t:"s", s: style("000000",GRAY,false,false)};
+  hoursPerTr.forEach(function(h, i) {
+    ws[XLSX.utils.encode_cell({r:R,c:i+1})] = {v:h, t:"n",
+      s: style(GREEN_DARK, GRAY, true, true, "0.##")};
+  });
+  ws[XLSX.utils.encode_cell({r:R,c:treninky.length+1})] = {v:"", t:"s", s:style("000000",GRAY,false,false)};
+  ws[XLSX.utils.encode_cell({r:R,c:treninky.length+2})] = {v:"", t:"s", s:style("000000",GRAY,false,false)};
+  ws[XLSX.utils.encode_cell({r:R,c:treninky.length+3})] = {v:"", t:"s", s:style("000000",GRAY,false,false)};
+  R++;
+
   // Player rows
-  players.forEach(function(player) {
-    var row = [player];
+  players.forEach(function(player, pi) {
+    var rowBg = pi % 2 === 0 ? WHITE : GRAY_LIGHT;
     var totalHours = 0;
     var totalPossible = 0;
+    ws[XLSX.utils.encode_cell({r:R,c:0})] = {v:player, t:"s",
+      s: style("000000", rowBg, false, false)};
     treninky.forEach(function(tr, i) {
       var t = tr.t || {};
-      var conf = (t.conf || []).concat(t.confT || []);
+      var conf = (t.conf||[]).concat(t.confT||[]);
       var wasHere = conf.indexOf(player) !== -1;
       var h = hoursPerTr[i];
-      var val = wasHere ? h : 0;
-      row.push(val);
-      if(wasHere) totalHours += h;
       totalPossible += h;
+      if(wasHere) totalHours += h;
+      var val = wasHere ? h : 0;
+      var bg = wasHere ? GREEN_LIGHT : (h > 0 ? RED_LIGHT : rowBg);
+      ws[XLSX.utils.encode_cell({r:R,c:i+1})] = {v:val, t:"n",
+        s: style(wasHere ? GREEN_DARK : "B71C1C", bg, false, true, "0.##")};
     });
-    row.push(""); // empty separator
-    row.push(totalHours);
-    var pct = totalPossible > 0 ? Math.round(totalHours / totalPossible * 100) + "%" : "0%";
-    row.push(pct);
-    rows.push(row);
+    ws[XLSX.utils.encode_cell({r:R,c:treninky.length+1})] = {v:"", t:"s", s:style("000000",rowBg,false,false)};
+    ws[XLSX.utils.encode_cell({r:R,c:treninky.length+2})] = {v:totalHours, t:"n",
+      s: style(GREEN_DARK, rowBg, true, true, "0.##")};
+    var pct = totalPossible > 0 ? totalHours/totalPossible : 0;
+    var pctBg = pct >= 0.75 ? GREEN_LIGHT : pct >= 0.5 ? "FFF9C4" : RED_LIGHT;
+    ws[XLSX.utils.encode_cell({r:R,c:treninky.length+3})] = {v:pct, t:"n",
+      s: style("000000", pctBg, true, true, "0%")};
+    R++;
   });
 
-  // Convert to CSV string
-  var csv = rows.map(function(row) {
-    return row.map(function(cell) {
-      var s = String(cell === null || cell === undefined ? "" : cell);
-      if(s.indexOf(",") !== -1 || s.indexOf(";") !== -1 || s.indexOf('"') !== -1) {
-        s = '"' + s.replace(/"/g, '""') + '"';
-      }
-      return s;
-    }).join(";"); // semicolon for Czech Excel
-  }).join("\n");
+  // Set range
+  ws["!ref"] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:R-1,c:maxCol-1}});
 
-  // Add BOM for Czech characters in Excel
-  var bom = "\uFEFF";
-  var blob = new Blob([bom + csv], {type: "text/csv;charset=utf-8;"});
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement("a");
-  a.href = url;
-  a.download = "dochazka_spartak_2026.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-  toast("Staženo! Otevři v Excelu.");
+  // Column widths
+  var cols = [{wch:20}];
+  treninky.forEach(function(){ cols.push({wch:7}); });
+  cols.push({wch:3}, {wch:9}, {wch:14});
+  ws["!cols"] = cols;
+
+  // Row heights
+  var rows = [{hpt:22}, {hpt:20}, {hpt:18}];
+  players.forEach(function(){ rows.push({hpt:18}); });
+  ws["!rows"] = rows;
+
+  // Merge title row
+  ws["!merges"] = [{s:{r:0,c:0}, e:{r:0,c:maxCol-1}}];
+
+  XLSX.utils.book_append_sheet(wb, ws, "Docházka 2026");
+  XLSX.writeFile(wb, "dochazka_spartak_2026.xlsx");
+  toast("Excel stažen!");
 }
 
 var appReady = false;
