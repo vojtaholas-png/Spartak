@@ -395,6 +395,7 @@ const db = getFirestore(initializeApp({
   appId:"1:252334492142:web:71180fbbb65737be34e6ff"
 }));
 
+window.ZAPASY = window.ZAPASY || [];
 const ZAPASY = [
   {k:1,den:"pa",dat:"2026-04-03",cas:"14:30",dom:"TJ Spartak VOTOČEK team Čelákovice",hos:"NK AUSTIN Vsetin",ds:true,poz:""},
   {k:2,den:"so",dat:"2026-04-11",cas:"10:00",dom:"TJ AVIA Čakovice",hos:"TJ Spartak VOTOČEK team Čelákovice",ds:false,poz:""},
@@ -411,13 +412,15 @@ const ZAPASY = [
   {k:13,den:"so",dat:"2026-06-13",cas:"10:00",dom:"Tělovýchovná jednota Radomyšl",hos:"TJ Spartak VOTOČEK team Čelákovice",ds:false,poz:"bez Adama bez petera"},
   {k:14,den:"so",dat:"2026-06-20",cas:"14:00",dom:"TJ Spartak VOTOČEK team Čelákovice",hos:"Sportovni klub nohejbalu Žatec",ds:true,poz:""}
 ];
+window.ZAPASY = ZAPASY;
 const MON=["","Led","Úno","Bře","Dub","Kvě","Čvn","Čvc","Srp","Zář","Říj","Lis","Pro"];
 const DNY={pa:"Pátek",so:"Sobota",ne:"Neděle"};
 
 let fsData={}, players=["Fodor Adam","Holas Vojtech","Kalous Vaclav","Matura Daniel","Nesladek Petr","Safr Radek","Vojtisek Marek","Andris Tomas","Kolensky Michal","Bares Michal","Flekac Martin","Frank Radoslav","Seidl Filip","Spilka Martin","JUN SUK LEE","Szlavecz Istvan"];
-let allTips={};
+window.allTips={};
+var allTips=window.allTips;
 
-function td(){const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');}
+window.td=function td(){const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');}
 function sh(n){return n.replace("TJ Spartak VOTOČEK team Čelákovice","Spartak").replace("Tělocvičná jednota Sokol ","Sokol ").replace("Tělovýchovná jednota ","").replace("Sportovni klub nohejbalu ","SK ").replace("NK AUSTIN ","Austin ").replace("MNK mobilprovás ","Mobilprovás ").replace("TJ AVIA ","AVIA ").replace("SK Liapor ","Liapor ").replace("TJ ","");}
 function sc(dat){const d=fsData['zap_'+dat];if(!d||d.score_d===null||d.score_d===undefined)return null;return{d:parseInt(d.score_d),h:parseInt(d.score_h)};}
 function isOpen(z){const dt=new Date(z.dat+'T'+z.cas+':00');dt.setMinutes(dt.getMinutes()-5);return new Date()<dt;}
@@ -430,7 +433,7 @@ onSnapshot(collection(db,'spartak'),snap=>{
 });
 
 onSnapshot(collection(db,'tipy'),snap=>{
-  allTips={};
+  window.allTips={}; allTips=window.allTips;
   snap.forEach(d=>{const t=d.data();if(!allTips[t.nick])allTips[t.nick]={};allTips[t.nick][String(t.kolo)]={d:t.d,h:t.h};});
   const nick=localStorage.getItem('stip_nick');
   if(nick&&document.getElementById('tipLb')){renderTipLb(nick);renderTipHist(nick);}
