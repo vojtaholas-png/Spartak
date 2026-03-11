@@ -213,6 +213,21 @@ nav{position:sticky;top:0;z-index:100;background:rgba(8,12,16,0.97);backdrop-fil
 .wm-time{font-family:'Barlow Condensed',sans-serif;font-size:10px;color:var(--muted);flex-shrink:0;margin-top:2px;}
 .note{font-family:'Barlow',sans-serif;font-size:11px;color:var(--muted);margin-top:10px;font-style:italic;}
 @media(max-width:640px){.grid2{grid-template-columns:1fr}.lm-score{font-size:40px;min-width:80px}.rd{display:none}.nav-tab{padding:5px 9px;font-size:13px}}
+
+/* LEAGUE TABLE */
+.lg-wrap{width:100%;overflow-x:auto;}
+.lg-table{width:100%;border-collapse:collapse;min-width:340px;}
+.lg-table thead tr{border-bottom:2px solid rgba(255,255,255,0.08);}
+.lg-table th{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:8px 10px;text-align:center;}
+.lg-table th:nth-child(2){text-align:left;}
+.lg-table tbody tr{border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.15s;}
+.lg-table tbody tr:hover{background:rgba(255,255,255,0.03);}
+.lg-table tbody tr.lgt-us{background:rgba(212,18,30,0.07);border-color:rgba(212,18,30,0.15);}
+.lg-table td{padding:9px 10px;font-family:'Barlow Condensed',sans-serif;font-size:14px;text-align:center;}
+.lg-table td:nth-child(2){text-align:left;font-weight:700;}
+.lg-table td:nth-child(3){font-family:'Bebas Neue',sans-serif;font-size:17px;color:var(--gold);}
+.lgt-pos{color:var(--muted);font-size:12px;margin-right:6px;}
+.lg-note{font-family:'Barlow',sans-serif;font-size:11px;color:var(--muted);margin-top:8px;font-style:italic;}
 </style>
 </head>
 <body>
@@ -252,6 +267,8 @@ nav{position:sticky;top:0;z-index:100;background:rgba(8,12,16,0.97);backdrop-fil
   <div class="sh"><div class="sh-title">Výsledky</div><div class="sh-sub">Extraliga 2026</div></div>
   <div class="card card-rt lm" id="lastMatch"><div class="loading">Načítám...</div></div>
   <div class="res-list" id="resList"><div class="loading">Načítám...</div></div>
+  <div class="sh" style="margin-top:26px"><div class="sh-title">Tabulka Extraligy</div><div class="sh-sub">2026 · živě</div></div>
+  <div id="lgTable"><div class="loading">Načítám...</div></div>
   <div class="sh" style="margin-top:26px"><div class="sh-title">Kalendář</div><div class="sh-sub">14 kol</div></div>
   <div class="cal-list" id="calList"><div class="loading">Načítám...</div></div>
 </div></div>
@@ -393,7 +410,7 @@ window.showTab=function(id,btn){
   if(id==='tipy')initTip();
 };
 
-function renderAll(){renderCD();renderOverview();renderCal();renderPlayers();renderVoting();}
+function renderAll(){renderCD();renderOverview();renderTable();renderCal();renderPlayers();renderVoting();}
 
 function renderCD(){
   const t=td(),nxt=ZAPASY.find(z=>z.dat>=t);
@@ -440,6 +457,57 @@ function renderOverview(){
     row.innerHTML='<div class="rk">'+z.k+'</div><div class="rd">'+parseInt(p[2])+'. '+parseInt(p[1])+'.</div><div class="rt">Spartak vs. '+opp+'</div>'+sH+bH;
     list.appendChild(row);
   });
+}
+
+
+function renderTable(){
+  const el=document.getElementById('lgTable');
+  if(!el)return;
+  const raw={value:fsData['extraliga_tabulka']};
+  if(!raw || !raw.value || typeof raw.value!=='object'){
+    el.innerHTML='<div class="loading" style="font-size:12px;padding:20px 0">Tabulka zatím není k dispozici</div>';
+    return;
+  }
+  const tbl=raw.value;
+  const TYMY=[
+    {id:'austin',   name:'NK AUSTIN Vsětín'},
+    {id:'avia',     name:'TJ AVIA Čakovice'},
+    {id:'spartak',  name:'Spartak Čelákovice', us:true},
+    {id:'liapor',   name:'SK Liapor KV'},
+    {id:'modrice',  name:'MNK Modřice'},
+    {id:'reporyje', name:'TJ Sokol Řeporyje'},
+    {id:'radomysl', name:'TJ Radomyšl'},
+    {id:'zatec',    name:'SK Žatec'},
+  ];
+  // Sort by pts desc, then v desc
+  const sorted=[...TYMY].map(t=>({...t,...(tbl[t.id]||{pts:0,z:0,v:0,r:0,p:0})}))
+    .sort((a,b)=>b.pts-a.pts||b.v-a.v);
+  let h='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-family:Barlow Condensed,sans-serif;">';
+  h+='<tr style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid rgba(255,255,255,0.07)">';
+  h+='<th style="padding:8px 6px;text-align:center;width:28px">#</th>';
+  h+='<th style="padding:8px 6px;text-align:left">Tým</th>';
+  h+='<th style="padding:8px 6px;text-align:center">Z</th>';
+  h+='<th style="padding:8px 6px;text-align:center">V</th>';
+  h+='<th style="padding:8px 6px;text-align:center">R</th>';
+  h+='<th style="padding:8px 6px;text-align:center">P</th>';
+  h+='<th style="padding:8px 6px;text-align:center;color:var(--gold)">B</th>';
+  h+='</tr>';
+  sorted.forEach((t,i)=>{
+    const us=t.us;
+    const bg=us?'rgba(212,18,30,0.07)':'transparent';
+    const brd=us?'border-left:3px solid var(--red)':'border-left:3px solid transparent';
+    h+='<tr style="background:'+bg+';'+brd+';border-bottom:1px solid rgba(255,255,255,0.04)">';
+    h+='<td style="padding:9px 6px;text-align:center;font-family:Bebas Neue,sans-serif;font-size:15px;color:var(--muted)">'+(i+1)+'</td>';
+    h+='<td style="padding:9px 6px;font-size:14px;font-weight:700;color:'+(us?'var(--red)':'var(--white)')+'">'+t.name+'</td>';
+    h+='<td style="padding:9px 6px;text-align:center;font-size:13px;color:var(--muted2)">'+(t.z||0)+'</td>';
+    h+='<td style="padding:9px 6px;text-align:center;font-size:13px">'+(t.v||0)+'</td>';
+    h+='<td style="padding:9px 6px;text-align:center;font-size:13px">'+(t.r||0)+'</td>';
+    h+='<td style="padding:9px 6px;text-align:center;font-size:13px">'+(t.p||0)+'</td>';
+    h+='<td style="padding:9px 6px;text-align:center;font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--gold)">'+(t.pts||0)+'</td>';
+    h+='</tr>';
+  });
+  h+='</table></div>';
+  el.innerHTML=h;
 }
 
 function renderCal(){
