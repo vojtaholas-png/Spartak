@@ -378,7 +378,8 @@ function showTab(id, btn) {
   var sec = document.getElementById('sec-' + id);
   if (sec) sec.classList.add('active');
   if (btn) btn.classList.add('on');
-  document.dispatchEvent(new CustomEvent('spartakTab', {detail: id}));
+  if (id === 'tipy'   && window._initTip)         window._initTip();
+  if (id === 'others' && window._renderOthersTab)  window._renderOthersTab();
 }
 </script>
 <script type="module">
@@ -808,10 +809,7 @@ function renderTipHist(nick){
 initTip();
 window._initTip = initTip;
 window._renderOthersTab = renderOthersTab;
-document.addEventListener('spartakTab', function(e) {
-  if (e.detail === 'tipy') initTip();
-  if (e.detail === 'others') renderOthersTab();
-});
+
 
 
 let wEmoji='🔥';
