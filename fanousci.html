@@ -365,6 +365,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(8,12,16,0.97);backdrop-fil
 <div class="section" id="sec-others"><div class="wrap">
   <div class="sh"><div class="sh-title">Tipy ostatních</div><div class="sh-sub" id="othersSubtitle">...</div></div>
   <div id="othersTabContent"><div class="loading">Načítám...</div></div>
+  <button onclick="alert('allTips: ' + JSON.stringify(allTips) + ' | kolo: ' + (function(){var t=td();for(var i=0;i<ZAPASY.length;i++){if(ZAPASY[i].dat>=t)return ZAPASY[i].k;}return '?';}()))" style="width:100%;margin-top:20px;padding:14px;background:var(--red);color:white;font-family:Bebas Neue,sans-serif;font-size:18px;border:none;cursor:pointer">🔍 ZOBRAZ DATA (DEBUG)</button>
 </div></div>
 
 </div></div>
