@@ -111,6 +111,8 @@ nav{position:sticky;top:0;z-index:100;background:rgba(8,12,16,0.97);backdrop-fil
 .lc-hdr{padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.07);}
 .lc-hdr-t{font-family:'Bebas Neue',sans-serif;font-size:16px;}
 .p-row{display:flex;align-items:center;padding:9px 16px;gap:10px;border-bottom:1px solid rgba(255,255,255,.04);transition:background .15s;}
+.p-row.clickable{cursor:pointer;}
+.p-row.clickable:hover{background:rgba(255,255,255,0.04);}
 .p-row:last-child{border-bottom:none;}
 .p-row:hover{background:rgba(255,255,255,.03);}
 .pi{font-family:'Bebas Neue',sans-serif;font-size:13px;color:var(--muted);min-width:20px;text-align:center;}
@@ -276,15 +278,26 @@ nav{position:sticky;top:0;z-index:100;background:rgba(8,12,16,0.97);backdrop-fil
 <!-- SESTAVA -->
 <div class="section" id="sec-sestava"><div class="wrap">
   <div class="sh"><div class="sh-title">Hráči</div><div class="sh-sub" id="pCount">...</div></div>
-  <div class="grid2">
-    <div class="lineup-card">
-      <div class="lc-hdr"><div class="lc-hdr-t">Hráči</div></div>
-      <div id="pList"><div class="loading">Načítám...</div></div>
-    </div>
-    <div class="lineup-card">
-      <div class="lc-hdr"><div class="lc-hdr-t">Realizační tým</div></div>
-      <div class="p-row"><div class="pi">👟</div><div class="pn">Martin Spilka</div><div class="ptag">Trenér</div></div>
-      <div class="p-row"><div class="pi">👟</div><div class="pn">Radoslav Frank</div><div class="ptag">Trenér</div></div>
+  <div id="pList"><div class="loading">Načítám...</div></div>
+
+  <!-- Realizační tým -->
+  <div class="sh" style="margin-top:26px"><div class="sh-title">Realizační tým</div></div>
+  <div class="p-row"><div class="pi">👟</div><div class="pn">Martin Spilka</div><div class="ptag">Trenér</div></div>
+  <div class="p-row"><div class="pi">👟</div><div class="pn">Radoslav Frank</div><div class="ptag">Trenér</div></div>
+
+  <!-- Player modal -->
+  <div id="playerModal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeModal()">
+    <div id="playerCard" style="background:#0e1318;border:1px solid rgba(255,255,255,0.1);border-top:4px solid var(--red);max-width:360px;width:100%;position:relative;animation:min .3s cubic-bezier(.22,1,.36,1)">
+      <button onclick="closeModal()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:var(--muted2);font-size:20px;cursor:pointer;line-height:1">✕</button>
+      <div id="pcNum" style="position:absolute;top:14px;left:18px;font-family:'Bebas Neue',sans-serif;font-size:48px;color:rgba(212,18,30,0.25);line-height:1"></div>
+      <div style="display:flex;justify-content:center;padding:28px 20px 16px">
+        <img id="pcImg" src="" alt="" style="width:130px;height:130px;object-fit:cover;border-radius:2px;border:2px solid rgba(255,255,255,0.08);background:#141b22">
+      </div>
+      <div style="padding:0 22px 24px;text-align:center">
+        <div id="pcName" style="font-family:'Bebas Neue',sans-serif;font-size:28px;line-height:1.1;margin-bottom:4px"></div>
+        <div id="pcNum2" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-bottom:8px"></div>
+        <div id="pcPos" style="font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:1px;color:var(--muted2)"></div>
+      </div>
     </div>
   </div>
 </div></div>
@@ -524,11 +537,66 @@ function renderCal(){
   });
 }
 
+const PLAYERS_DATA=[
+  {name:'Fodor Adam',     num:1,   pos:'Smečař · Univerzál'},
+  {name:'Holas Vojtech',  num:11,  pos:'Polař · Nahrávač · Univerzál'},
+  {name:'Kalous Vaclav',  num:3,   pos:'Smečař · Blokař'},
+  {name:'Matura Daniel',  num:24,  pos:'Smečař · Blokař'},
+  {name:'Nesladek Petr',  num:44,  pos:'Smečař · Blokař'},
+  {name:'Safr Radek',     num:18,  pos:'Polař · Nahrávač · Blokař · Univerzál'},
+  {name:'Vojtisek Marek', num:7,   pos:'Polař · Nahrávač · Univerzál'},
+  {name:'Andris Tomas',   num:8,   pos:'Smečař · Univerzál'},
+  {name:'Kolensky Michal',num:9,   pos:'Smečař · Univerzál'},
+  {name:'Bares Michal',   num:10,  pos:'Smečař · Univerzál'},
+  {name:'Flekac Martin',  num:13,  pos:'Smečař · Univerzál'},
+  {name:'Frank Radoslav', num:12,  pos:'Nahrávač · Polař · Univerzál'},
+  {name:'Seidl Filip',    num:13,  pos:'Polař · Nahrávač · Univerzál'},
+  {name:'Spilka Martin',  num:14,  pos:'Smečař · Blokař'},
+  {name:'JUN SUK LEE',    num:null,pos:''},
+  {name:'Szlavecz Istvan',num:null,pos:'Smečař · Blokař · Univerzál'},
+];
+
+function imgSlug(name){return name.toLowerCase().replace(/ /g,'-').replace(/[^a-z0-9-]/g,'');}
+
+function openPlayer(idx){
+  const p=PLAYERS_DATA[idx];
+  const modal=document.getElementById('playerModal');
+  const numStr=p.num!=null?'#'+p.num:'';
+  document.getElementById('pcNum').textContent=numStr;
+  document.getElementById('pcName').textContent=p.name;
+  document.getElementById('pcNum2').textContent='Dres '+numStr;
+  document.getElementById('pcPos').textContent=p.pos||'';
+  const img=document.getElementById('pcImg');
+  const slug=imgSlug(p.name);
+  img.onerror=function(){this.src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="130" height="130" viewBox="0 0 130 130"><rect width="130" height="130" fill="%23141b22"/><circle cx="65" cy="48" r="22" fill="%23263044"/><ellipse cx="65" cy="105" rx="36" ry="26" fill="%23263044"/></svg>';this.onerror=null;};
+  img.src='images/hraci/'+slug+'.jpg';
+  modal.style.display='flex';
+  document.body.style.overflow='hidden';
+}
+
+window.closeModal=function(){
+  document.getElementById('playerModal').style.display='none';
+  document.body.style.overflow='';
+};
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape')window.closeModal();});
+
 function renderPlayers(){
   const list=document.getElementById('pList');
-  document.getElementById('pCount').textContent=players.length+' hráčů';
+  document.getElementById('pCount').textContent=PLAYERS_DATA.length+' hráčů';
   list.innerHTML='';
-  players.forEach((p,i)=>{const r=document.createElement('div');r.className='p-row';r.innerHTML='<div class="pi">'+(i+1)+'.</div><div class="pn">'+p+'</div>';list.appendChild(r);});
+  const sorted=[...PLAYERS_DATA].sort((a,b)=>{
+    const an=a.num??999,bn=b.num??999;return an-bn;
+  });
+  sorted.forEach((p,i)=>{
+    const origIdx=PLAYERS_DATA.indexOf(p);
+    const numStr=p.num!=null?p.num:'';
+    const r=document.createElement('div');
+    r.className='p-row clickable';
+    r.onclick=()=>openPlayer(origIdx);
+    r.innerHTML='<div class="pi" style="font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--red);min-width:30px;text-align:center">'+numStr+'</div><div class="pn">'+p.name+'</div><div style="font-family:Barlow Condensed,sans-serif;font-size:11px;color:var(--muted2);padding-right:4px">›</div>';
+    list.appendChild(r);
+  });
 }
 
 let vSel=null,vDone=false;
