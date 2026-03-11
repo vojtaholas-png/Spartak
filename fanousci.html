@@ -681,9 +681,7 @@ function renderOthersTab(){
   const wrap=document.getElementById('othersTabContent');
   const sub=document.getElementById('othersSubtitle');
   if(!wrap)return;
-  // Always show debug info first
-  const _dbg=JSON.stringify(allTips,null,2);
-  wrap.innerHTML='<details open style="margin-bottom:16px;font-family:monospace;font-size:11px;color:var(--muted2)"><summary style="cursor:pointer;color:var(--gold);font-family:Barlow Condensed,sans-serif;font-size:13px;letter-spacing:1px">🔍 Debug – allTips data</summary><pre style="background:#0a0f14;padding:12px;overflow-x:auto;margin-top:6px;font-size:10px;max-height:200px;overflow-y:auto">'+_dbg+'</pre></details>';
+
   const t=td();
   const openZ=ZAPASY.find(z=>z.dat>=t&&isOpen(z));
   const nextZ=ZAPASY.find(z=>z.dat>=t&&!isOpen(z)&&!sc(z.dat));
@@ -834,6 +832,13 @@ document.addEventListener('spartakTab', function(e) {
   if (e.detail === 'tipy') initTip();
   if (e.detail === 'others') renderOthersTab();
 });
+// Also poll every 2s when others tab is active (belt AND suspenders)
+setInterval(function(){
+  if(document.getElementById('sec-others') && 
+     document.getElementById('sec-others').classList.contains('active')){
+    renderOthersTab();
+  }
+}, 2000);
 
 let wEmoji='🔥';
 window.wPickEmoji=function(btn){document.querySelectorAll('.emo-btn').forEach(b=>b.classList.remove('esel'));btn.classList.add('esel');wEmoji=btn.dataset.e;};
