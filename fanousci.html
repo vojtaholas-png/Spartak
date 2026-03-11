@@ -377,8 +377,7 @@ function showTab(id, btn) {
   var sec = document.getElementById('sec-' + id);
   if (sec) sec.classList.add('active');
   if (btn) btn.classList.add('on');
-  if (typeof window._initTip === 'function' && id === 'tipy') window._initTip();
-  if (typeof window._renderOthersTab === 'function' && id === 'others') window._renderOthersTab();
+  document.dispatchEvent(new CustomEvent('spartakTab', {detail: id}));
 }
 </script>
 <script type="module">
@@ -831,6 +830,10 @@ function renderTipHist(nick){
 initTip();
 window._initTip = initTip;
 window._renderOthersTab = renderOthersTab;
+document.addEventListener('spartakTab', function(e) {
+  if (e.detail === 'tipy') initTip();
+  if (e.detail === 'others') renderOthersTab();
+});
 
 let wEmoji='🔥';
 window.wPickEmoji=function(btn){document.querySelectorAll('.emo-btn').forEach(b=>b.classList.remove('esel'));btn.classList.add('esel');wEmoji=btn.dataset.e;};
