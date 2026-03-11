@@ -369,6 +369,18 @@ nav{position:sticky;top:0;z-index:100;background:rgba(8,12,16,0.97);backdrop-fil
 
 </div></div>
 
+<script>
+// Stub – prevents "showTab is not defined" if user clicks before module loads
+function showTab(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('on'));
+  var sec = document.getElementById('sec-' + id);
+  if (sec) sec.classList.add('active');
+  if (btn) btn.classList.add('on');
+  // initTip will be called once module loads if needed
+  if (typeof window._initTip === 'function' && id === 'tipy') window._initTip();
+}
+</script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getFirestore, collection, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
@@ -413,24 +425,17 @@ function calcPts(td,th,rd,rh){if(td===rd&&th===rh)return 5;const tr=td>th?'w':td
 onSnapshot(collection(db,'spartak'),snap=>{
   snap.forEach(d=>{fsData[d.id]=d.data().value;});
   if(fsData['players']&&Array.isArray(fsData['players']))players=fsData['players'];
-  renderAll();
+  try{renderAll();}catch(e){console.error('renderAll error:',e);}
 });
 
 onSnapshot(collection(db,'tipy'),snap=>{
   allTips={};
-  snap.forEach(d=>{const t=d.data();if(!allTips[t.nick])allTips[t.nick]={};allTips[t.nick][t.kolo]={d:t.d,h:t.h};});
+  snap.forEach(d=>{const t=d.data();if(!allTips[t.nick])allTips[t.nick]={};allTips[t.nick][String(t.kolo)]={d:t.d,h:t.h};});
   const nick=localStorage.getItem('stip_nick');
   if(nick&&document.getElementById('tipLb')){renderTipLb(nick);renderTipHist(nick);}
   if(document.getElementById('othersTabContent'))renderOthersTab();
 });
 
-window.showTab=function(id,btn){
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('on'));
-  document.getElementById('sec-'+id).classList.add('active');
-  if(btn)btn.classList.add('on');
-  if(id==='tipy')initTip();
-};
 
 function renderAll(){renderCD();renderOverview();renderTable();renderCal();renderPlayers();renderVoting();renderOthersTab();}
 
@@ -652,7 +657,7 @@ function renderTipRound(nick){
   const nextZ=ZAPASY.find(z=>z.dat>=t&&!isOpen(z)&&!sc(z.dat));
   const z=openZ||nextZ;
   if(!z){wrap.innerHTML='<div class="no-data">Všechna kola jsou odehrána 🏁</div>';return;}
-  const open=!!openZ,myTip=allTips[nick]?allTips[nick][z.k]:null;
+  const open=!!openZ,myTip=allTips[nick]?allTips[nick][String(z.k)]:null;
   const opp=sh(z.ds?z.hos:z.dom),p=z.dat.split('-');
   const dStr=parseInt(p[2])+'. '+parseInt(p[1])+'. '+p[0];
   let body='';
@@ -688,7 +693,7 @@ function renderOthersTab(){
   if(sub)sub.textContent='Kolo '+z.k+' · Spartak vs. '+opp;
   const rows=[];
   Object.keys(allTips).forEach(n=>{
-    const tip=allTips[n]?allTips[n][z.k]:null;
+    const tip=allTips[n]?allTips[n][String(z.k)]:null;
     if(!tip)return;
     rows.push({nick:n,d:tip.d,h:tip.h,isMe:n===nick});
   });
@@ -701,7 +706,7 @@ function renderOthersTab(){
     h+='<div style="background:rgba(240,180,41,0.08);border:1px solid rgba(240,180,41,0.2);padding:10px 16px;margin-bottom:12px;font-family:Barlow Condensed,sans-serif;font-size:12px;letter-spacing:1px;color:var(--gold)">⏳ Tipy jsou stále otevřené – každý může ještě změnit svůj tip</div>';
   }
   // Round selector buttons
-  const roundsWithTips=ZAPASY.filter(z2=>Object.keys(allTips).some(n=>allTips[n][z2.k]));
+  const roundsWithTips=ZAPASY.filter(z2=>Object.keys(allTips).some(n=>allTips[n][String(z2.k)]));
   if(roundsWithTips.length>1){
     h+='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px">';
     roundsWithTips.forEach(z2=>{
@@ -752,7 +757,7 @@ window.switchOthersRound=function(kolo){
   if(sub)sub.textContent='Kolo '+z.k+' · Spartak vs. '+opp;
   const rows=[];
   Object.keys(allTips).forEach(n=>{
-    const tip=allTips[n]?allTips[n][z.k]:null;
+    const tip=allTips[n]?allTips[n][String(z.k)]:null;
     if(!tip)return;
     rows.push({nick:n,d:tip.d,h:tip.h,isMe:n===nick});
   });
@@ -781,7 +786,7 @@ function renderTipLb(nick){
   const scores={};
   Object.keys(allTips).forEach(n=>{
     let pts=0,c=0,e=0,tot=0;
-    played.forEach(z=>{const tip=allTips[n][z.k];if(!tip)return;const s=sc(z.dat),rd=z.ds?s.d:s.h,rh=z.ds?s.h:s.d,pp=calcPts(tip.d,tip.h,rd,rh);pts+=pp;tot++;if(pp===5){e++;c++;}else if(pp===2)c++;});
+    played.forEach(z=>{const tip=allTips[n][String(z.k)];if(!tip)return;const s=sc(z.dat),rd=z.ds?s.d:s.h,rh=z.ds?s.h:s.d,pp=calcPts(tip.d,tip.h,rd,rh);pts+=pp;tot++;if(pp===5){e++;c++;}else if(pp===2)c++;});
     scores[n]={pts,c,e,tot};
   });
   if(!scores[nick])scores[nick]={pts:0,c:0,e:0,tot:0};
@@ -800,7 +805,7 @@ function renderTipHist(nick){
   if(!played.length){wrap.innerHTML='<div class="note" style="padding:10px 0">Historie se zobrazí po prvním zápase.</div>';return;}
   wrap.innerHTML='';
   [...played].reverse().forEach(z=>{
-    const myTip=allTips[nick]?allTips[nick][z.k]:null;
+    const myTip=allTips[nick]?allTips[nick][String(z.k)]:null;
     const s=sc(z.dat),rd=z.ds?s.d:s.h,rh=z.ds?s.h:s.d;
     const p=myTip?calcPts(myTip.d,myTip.h,rd,rh):null;
     const opp=sh(z.ds?z.hos:z.dom);
@@ -812,6 +817,7 @@ function renderTipHist(nick){
 }
 
 initTip();
+window._initTip = initTip;
 
 let wEmoji='🔥';
 window.wPickEmoji=function(btn){document.querySelectorAll('.emo-btn').forEach(b=>b.classList.remove('esel'));btn.classList.add('esel');wEmoji=btn.dataset.e;};
