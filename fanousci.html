@@ -681,13 +681,22 @@ function renderOthersTab(){
   const wrap=document.getElementById('othersTabContent');
   const sub=document.getElementById('othersSubtitle');
   if(!wrap)return;
-
   const t=td();
   const openZ=ZAPASY.find(z=>z.dat>=t&&isOpen(z));
   const nextZ=ZAPASY.find(z=>z.dat>=t&&!isOpen(z)&&!sc(z.dat));
   const lastPlayed=[...ZAPASY].reverse().find(z=>z.dat<t&&sc(z.dat));
   const z=openZ||nextZ||lastPlayed;
-  if(!z){wrap.innerHTML='<div class="no-data">Žádná kola k zobrazení</div>';return;}
+  const nickCount=Object.keys(allTips).length;
+  const zKolo=z?z.k:'?';
+  let debugHtml='<div style="background:#0a0f14;border:1px solid rgba(240,180,41,0.3);padding:12px 14px;margin-bottom:16px;font-family:monospace;font-size:11px;line-height:1.8">'
+    +'<div style="color:var(--gold);font-size:12px;margin-bottom:6px">DEBUG</div>'
+    +'<div>allTips nicků: <b style="color:var(--white)">'+nickCount+'</b></div>'
+    +'<div>Hledáme kolo: <b style="color:var(--white)">'+zKolo+'</b></div>'
+    +'<div>allTips obsah: <b style="color:var(--white)">'+JSON.stringify(allTips)+'</b></div>'
+    +'</div>';
+  wrap.innerHTML=debugHtml;
+
+  if(!z){wrap.innerHTML=debugHtml+'<div class="no-data">Žádná kola k zobrazení</div>';return;}
   const nick=localStorage.getItem('stip_nick')||'';
   const opp=sh(z.ds?z.hos:z.dom);
   if(sub)sub.textContent='Kolo '+z.k+' · Spartak vs. '+opp;
@@ -697,16 +706,7 @@ function renderOthersTab(){
     if(!tip)return;
     rows.push({nick:n,d:tip.d,h:tip.h,isMe:n===nick});
   });
-  if(!rows.length){
-    // DEBUG: show what we actually have
-    const debugInfo = JSON.stringify(allTips, null, 2);
-    wrap.innerHTML='<div class="no-data">Zatím nikdo netipoval 🤔</div>'
-      +'<details style="margin-top:12px;font-family:monospace;font-size:11px;color:var(--muted2)">'
-      +'<summary style="cursor:pointer;color:var(--gold)">🔍 Debug info (klikni)</summary>'
-      +'<pre style="background:#0a0f14;padding:12px;overflow-x:auto;margin-top:6px;font-size:10px">Kolo hledáme: '+String(z.k)+'\nallTips:\n'+debugInfo+'</pre>'
-      +'</details>';
-    return;
-  }
+  if(!rows.length){wrap.innerHTML=debugHtml+'<div class="no-data">Zatím nikdo netipoval pro kolo '+z.k+'</div>';return;}
   rows.sort((a,b)=>b.isMe-a.isMe||(a.nick<b.nick?-1:1));
   const s=sc(z.dat);
   const isOpenRound=!!openZ;
@@ -725,7 +725,7 @@ function renderOthersTab(){
     h+='</div>';
   }
   h+=buildOthersRows(rows,z,s);
-  wrap.innerHTML=h;
+  wrap.innerHTML=debugHtml+h;
 }
 
 function buildOthersRows(rows,z,s){
