@@ -363,7 +363,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(8,12,16,0.97);backdrop-fil
 
 <!-- TIPY OSTATNÍCH -->
 <div class="section" id="sec-others"><div class="wrap">
-  <div class="sh"><div class="sh-title">Tipy ostatních</div><div class="sh-sub" id="othersSubtitle">Aktuální kolo</div></div>
+  <div class="sh"><div class="sh-title">Tipy ostatních</div><div class="sh-sub" id="othersSubtitle">...</div></div>
   <div id="othersTabContent"><div class="loading">Načítám...</div></div>
 </div></div>
 
@@ -678,102 +678,81 @@ function renderTipRound(nick){
 
 
 function renderOthersTab(){
-  const wrap=document.getElementById('othersTabContent');
-  const sub=document.getElementById('othersSubtitle');
-  if(!wrap)return;
-  const t=td();
-  const openZ=ZAPASY.find(z=>z.dat>=t&&isOpen(z));
-  const nextZ=ZAPASY.find(z=>z.dat>=t&&!isOpen(z)&&!sc(z.dat));
-  const lastPlayed=[...ZAPASY].reverse().find(z=>z.dat<t&&sc(z.dat));
-  const z=openZ||nextZ||lastPlayed;
-  const nickCount=Object.keys(allTips).length;
-  const zKolo=z?z.k:'?';
-  let debugHtml='<div style="background:#0a0f14;border:1px solid rgba(240,180,41,0.3);padding:12px 14px;margin-bottom:16px;font-family:monospace;font-size:11px;line-height:1.8">'
-    +'<div style="color:var(--gold);font-size:12px;margin-bottom:6px">DEBUG</div>'
-    +'<div>allTips nicků: <b style="color:var(--white)">'+nickCount+'</b></div>'
-    +'<div>Hledáme kolo: <b style="color:var(--white)">'+zKolo+'</b></div>'
-    +'<div>allTips obsah: <b style="color:var(--white)">'+JSON.stringify(allTips)+'</b></div>'
-    +'</div>';
-  wrap.innerHTML=debugHtml;
+  var wrap = document.getElementById('othersTabContent');
+  var sub  = document.getElementById('othersSubtitle');
+  if(!wrap) return;
 
-  if(!z){wrap.innerHTML=debugHtml+'<div class="no-data">Žádná kola k zobrazení</div>';return;}
-  const nick=localStorage.getItem('stip_nick')||'';
-  const opp=sh(z.ds?z.hos:z.dom);
-  if(sub)sub.textContent='Kolo '+z.k+' · Spartak vs. '+opp;
-  const rows=[];
-  Object.keys(allTips).forEach(n=>{
-    const tip=allTips[n]?allTips[n][String(z.k)]:null;
-    if(!tip)return;
-    rows.push({nick:n,d:tip.d,h:tip.h,isMe:n===nick});
-  });
-  if(!rows.length){wrap.innerHTML=debugHtml+'<div class="no-data">Zatím nikdo netipoval pro kolo '+z.k+'</div>';return;}
-  rows.sort((a,b)=>b.isMe-a.isMe||(a.nick<b.nick?-1:1));
-  const s=sc(z.dat);
-  const isOpenRound=!!openZ;
-  let h='';
-  if(isOpenRound){
-    h+='<div style="background:rgba(240,180,41,0.08);border:1px solid rgba(240,180,41,0.2);padding:10px 16px;margin-bottom:12px;font-family:Barlow Condensed,sans-serif;font-size:12px;letter-spacing:1px;color:var(--gold)">⏳ Tipy jsou stále otevřené – každý může ještě změnit svůj tip</div>';
+  // Which round to show: first future, or last played
+  var today = td();
+  var z = null;
+  for(var i=0; i<ZAPASY.length; i++){
+    if(ZAPASY[i].dat >= today){ z = ZAPASY[i]; break; }
   }
-  // Round selector buttons
-  const roundsWithTips=ZAPASY.filter(z2=>Object.keys(allTips).some(n=>allTips[n][String(z2.k)]));
-  if(roundsWithTips.length>1){
-    h+='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px">';
-    roundsWithTips.forEach(z2=>{
-      const active=z2.k===z.k;
-      h+='<button onclick="window.switchOthersRound('+z2.k+')" style="padding:5px 12px;font-family:Bebas Neue,sans-serif;font-size:15px;background:'+(active?'var(--red)':'var(--dark3)')+';border:1px solid '+(active?'var(--red)':'rgba(255,255,255,0.1)')+';color:var(--white);cursor:pointer">'+z2.k+'.</button>';
-    });
-    h+='</div>';
-  }
-  h+=buildOthersRows(rows,z,s);
-  wrap.innerHTML=debugHtml+h;
-}
+  if(!z) z = ZAPASY[ZAPASY.length-1];
 
-function buildOthersRows(rows,z,s){
-  let h='<div style="display:flex;flex-direction:column;gap:2px">';
-  h+='<div style="display:flex;align-items:center;gap:12px;padding:6px 16px;font-family:Barlow Condensed,sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid rgba(255,255,255,0.07)">';
-  h+='<div style="flex:1">Hráč</div><div style="min-width:60px;text-align:center">Tip</div>';
-  if(s)h+='<div style="min-width:55px;text-align:right">Body</div>';
-  h+='</div>';
-  rows.forEach(r=>{
-    let pts=null,ptsColor='var(--muted2)',icon='';
+  if(sub) sub.textContent = 'Kolo ' + z.k + ' · Spartak vs. ' + sh(z.ds ? z.hos : z.dom);
+
+  // Collect tips for this round
+  var nicks = Object.keys(allTips);
+  var rows = [];
+  for(var n=0; n<nicks.length; n++){
+    var nick = nicks[n];
+    var tip = allTips[nick][z.k] || allTips[nick][String(z.k)] || allTips[nick][Number(z.k)];
+    if(!tip) continue;
+    rows.push({ nick: nick, d: tip.d, h: tip.h });
+  }
+
+  var myNick = localStorage.getItem('stip_nick') || '';
+
+  if(rows.length === 0){
+    wrap.innerHTML = '<div style="text-align:center;padding:40px 20px;font-family:Barlow Condensed,sans-serif;font-size:14px;color:var(--muted2)">'
+      + 'Zatím nikdo netipoval pro kolo ' + z.k
+      + '<br><span style="font-size:11px;color:var(--muted);margin-top:6px;display:block">Tipů celkem v DB: ' + nicks.length + ' hráčů</span>'
+      + '</div>';
+    return;
+  }
+
+  rows.sort(function(a,b){ return a.nick === myNick ? -1 : b.nick === myNick ? 1 : a.nick < b.nick ? -1 : 1; });
+
+  var s = sc(z.dat);
+  var html2 = '<div style="display:flex;flex-direction:column;gap:2px">';
+  // Header
+  html2 += '<div style="display:flex;padding:6px 16px;font-family:Barlow Condensed,sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid rgba(255,255,255,.07)">'
+    + '<div style="flex:1">Hráč</div><div style="min-width:70px;text-align:center">Tip</div>'
+    + (s ? '<div style="min-width:50px;text-align:right">Body</div>' : '')
+    + '</div>';
+
+  for(var r=0; r<rows.length; r++){
+    var row = rows[r];
+    var isMe = row.nick === myNick;
+    var pts = null, icon = '', ptsColor = 'var(--muted2)';
     if(s){
-      const rd=z.ds?s.d:s.h,rh=z.ds?s.h:s.d;
-      pts=calcPts(r.d,r.h,rd,rh);
-      if(pts===5){ptsColor='var(--gold)';icon='🎯';}
-      else if(pts===2){ptsColor='var(--green)';icon='✅';}
-      else{icon='❌';}
+      var rd = z.ds ? s.d : s.h, rh = z.ds ? s.h : s.d;
+      pts = calcPts(row.d, row.h, rd, rh);
+      if(pts===5){ icon='🎯'; ptsColor='var(--gold)'; }
+      else if(pts===2){ icon='✅'; ptsColor='var(--green)'; }
+      else { icon='❌'; }
     }
-    const bg=r.isMe?'rgba(212,18,30,0.06)':'var(--dark2)';
-    const border=r.isMe?'border:1px solid rgba(212,18,30,0.3)':'border:1px solid rgba(255,255,255,0.05)';
-    h+='<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;background:'+bg+';'+border+'">';
-    h+='<div style="flex:1;font-family:Barlow Condensed,sans-serif;font-size:14px;font-weight:700">'+r.nick+(r.isMe?' <span style="font-size:10px;color:var(--red);letter-spacing:1px">(já)</span>':'')+'</div>';
-    h+='<div style="font-family:Bebas Neue,sans-serif;font-size:20px;letter-spacing:2px;min-width:60px;text-align:center">'+r.d+' : '+r.h+'</div>';
-    if(s)h+='<div style="font-family:Bebas Neue,sans-serif;font-size:17px;color:'+ptsColor+';min-width:55px;text-align:right">'+icon+' '+pts+'b</div>';
-    h+='</div>';
-  });
-  h+='</div>';
-  if(s){const rd=z.ds?s.d:s.h,rh=z.ds?s.h:s.d;h+='<div style="text-align:center;margin-top:12px;font-family:Bebas Neue,sans-serif;font-size:13px;letter-spacing:2px;color:var(--muted2)">VÝSLEDEK: <span style="color:var(--white)">'+rd+' : '+rh+'</span></div>';}
-  return h;
+    html2 += '<div style="display:flex;align-items:center;padding:11px 16px;gap:12px;'
+      + 'background:' + (isMe ? 'rgba(212,18,30,.06)' : 'var(--dark2)') + ';'
+      + 'border:1px solid ' + (isMe ? 'rgba(212,18,30,.3)' : 'rgba(255,255,255,.05)') + '">'
+      + '<div style="flex:1;font-family:Barlow Condensed,sans-serif;font-size:15px;font-weight:700">'
+      + row.nick + (isMe ? ' <span style="font-size:10px;color:var(--red)">(já)</span>' : '') + '</div>'
+      + '<div style="font-family:Bebas Neue,sans-serif;font-size:22px;letter-spacing:2px;min-width:70px;text-align:center">'
+      + row.d + ' : ' + row.h + '</div>'
+      + (s ? '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;min-width:50px;text-align:right;color:' + ptsColor + '">' + icon + ' ' + pts + '</div>' : '')
+      + '</div>';
+  }
+  html2 += '</div>';
+
+  if(s){
+    var rd2 = z.ds ? s.d : s.h, rh2 = z.ds ? s.h : s.d;
+    html2 += '<div style="text-align:center;margin-top:14px;font-family:Barlow Condensed,sans-serif;font-size:12px;letter-spacing:2px;color:var(--muted2)">VÝSLEDEK: <span style="color:var(--white);font-family:Bebas Neue,sans-serif;font-size:16px">' + rd2 + ' : ' + rh2 + '</span></div>';
+  }
+
+  wrap.innerHTML = html2;
 }
 
-window.switchOthersRound=function(kolo){
-  const wrap=document.getElementById('othersTabContent');
-  const sub=document.getElementById('othersSubtitle');
-  if(!wrap)return;
-  const z=ZAPASY.find(z2=>z2.k===kolo);if(!z)return;
-  const nick=localStorage.getItem('stip_nick')||'';
-  const opp=sh(z.ds?z.hos:z.dom);
-  if(sub)sub.textContent='Kolo '+z.k+' · Spartak vs. '+opp;
-  const rows=[];
-  Object.keys(allTips).forEach(n=>{
-    const tip=allTips[n]?allTips[n][String(z.k)]:null;
-    if(!tip)return;
-    rows.push({nick:n,d:tip.d,h:tip.h,isMe:n===nick});
-  });
-  if(!rows.length){wrap.innerHTML='<div class="no-data">Žádné tipy pro kolo '+kolo+'</div>';return;}
-  rows.sort((a,b)=>b.isMe-a.isMe||(a.nick<b.nick?-1:1));
-  wrap.innerHTML=buildOthersRows(rows,z,sc(z.dat));
-};
 
 window.saveTip=async function(kolo){
   const nick=localStorage.getItem('stip_nick');if(!nick)return;
@@ -832,13 +811,7 @@ document.addEventListener('spartakTab', function(e) {
   if (e.detail === 'tipy') initTip();
   if (e.detail === 'others') renderOthersTab();
 });
-// Also poll every 2s when others tab is active (belt AND suspenders)
-setInterval(function(){
-  if(document.getElementById('sec-others') && 
-     document.getElementById('sec-others').classList.contains('active')){
-    renderOthersTab();
-  }
-}, 2000);
+
 
 let wEmoji='🔥';
 window.wPickEmoji=function(btn){document.querySelectorAll('.emo-btn').forEach(b=>b.classList.remove('esel'));btn.classList.add('esel');wEmoji=btn.dataset.e;};
