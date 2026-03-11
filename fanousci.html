@@ -247,6 +247,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(8,12,16,0.97);backdrop-fil
     <button class="nav-tab" onclick="showTab('sestava',this)">Sestava</button>
     <button class="nav-tab" onclick="showTab('hlasovani',this)">Hlasování</button>
     <button class="nav-tab" onclick="showTab('tipy',this)">Tipy</button>
+    <button class="nav-tab" id="othersTab" onclick="showTab('others',this)">Tipy ostatních</button>
     <button class="nav-tab" onclick="showTab('zed',this)">Zeď podpory</button>
   </div>
 </nav>
@@ -359,6 +360,13 @@ nav{position:sticky;top:0;z-index:100;background:rgba(8,12,16,0.97);backdrop-fil
       <div class="wm"><div class="wm-e">💪</div><div class="wm-b"><div class="wm-n">Petra K.</div><div class="wm-t">SPARTAK DO TOHO! Přijdeme celá rodina. Makejte!</div></div><div class="wm-time">dnes</div></div>
     </div>
   </div>
+
+<!-- TIPY OSTATNÍCH -->
+<div class="section" id="sec-others"><div class="wrap">
+  <div class="sh"><div class="sh-title">Tipy ostatních</div><div class="sh-sub" id="othersSubtitle">Aktuální kolo</div></div>
+  <div id="othersTabContent"><div class="loading">Načítám...</div></div>
+</div></div>
+
 </div></div>
 
 <script type="module">
@@ -413,17 +421,18 @@ onSnapshot(collection(db,'tipy'),snap=>{
   snap.forEach(d=>{const t=d.data();if(!allTips[t.nick])allTips[t.nick]={};allTips[t.nick][t.kolo]={d:t.d,h:t.h};});
   const nick=localStorage.getItem('stip_nick');
   if(nick&&document.getElementById('tipLb')){renderTipLb(nick);renderTipHist(nick);}
+  if(document.getElementById('othersTabContent'))renderOthersTab();
 });
 
 window.showTab=function(id,btn){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('on'));
   document.getElementById('sec-'+id).classList.add('active');
-  if(btn)btn.classList.add('active');
+  if(btn)btn.classList.add('on');
   if(id==='tipy')initTip();
 };
 
-function renderAll(){renderCD();renderOverview();renderTable();renderCal();renderPlayers();renderVoting();}
+function renderAll(){renderCD();renderOverview();renderTable();renderCal();renderPlayers();renderVoting();renderOthersTab();}
 
 function renderCD(){
   const t=td(),nxt=ZAPASY.find(z=>z.dat>=t);
@@ -662,6 +671,95 @@ function renderTipRound(nick){
     +'<div class="tip-vs"><div class="tip-tn h">Spartak</div><div class="tip-vs-s">vs</div><div class="tip-tn" style="text-align:right">'+opp+'</div></div>'
     +body+'</div>';
 }
+
+
+function renderOthersTab(){
+  const wrap=document.getElementById('othersTabContent');
+  const sub=document.getElementById('othersSubtitle');
+  if(!wrap)return;
+  const t=td();
+  const openZ=ZAPASY.find(z=>z.dat>=t&&isOpen(z));
+  const nextZ=ZAPASY.find(z=>z.dat>=t&&!isOpen(z)&&!sc(z.dat));
+  const lastPlayed=[...ZAPASY].reverse().find(z=>z.dat<t&&sc(z.dat));
+  const z=openZ||nextZ||lastPlayed;
+  if(!z){wrap.innerHTML='<div class="no-data">Žádná kola k zobrazení</div>';return;}
+  const nick=localStorage.getItem('stip_nick')||'';
+  const opp=sh(z.ds?z.hos:z.dom);
+  if(sub)sub.textContent='Kolo '+z.k+' · Spartak vs. '+opp;
+  const rows=[];
+  Object.keys(allTips).forEach(n=>{
+    const tip=allTips[n]?allTips[n][z.k]:null;
+    if(!tip)return;
+    rows.push({nick:n,d:tip.d,h:tip.h,isMe:n===nick});
+  });
+  if(!rows.length){wrap.innerHTML='<div class="no-data">Zatím nikdo netipoval 🤔</div>';return;}
+  rows.sort((a,b)=>b.isMe-a.isMe||(a.nick<b.nick?-1:1));
+  const s=sc(z.dat);
+  const isOpenRound=!!openZ;
+  let h='';
+  if(isOpenRound){
+    h+='<div style="background:rgba(240,180,41,0.08);border:1px solid rgba(240,180,41,0.2);padding:10px 16px;margin-bottom:12px;font-family:Barlow Condensed,sans-serif;font-size:12px;letter-spacing:1px;color:var(--gold)">⏳ Tipy jsou stále otevřené – každý může ještě změnit svůj tip</div>';
+  }
+  // Round selector buttons
+  const roundsWithTips=ZAPASY.filter(z2=>Object.keys(allTips).some(n=>allTips[n][z2.k]));
+  if(roundsWithTips.length>1){
+    h+='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px">';
+    roundsWithTips.forEach(z2=>{
+      const active=z2.k===z.k;
+      h+='<button onclick="window.switchOthersRound('+z2.k+')" style="padding:5px 12px;font-family:Bebas Neue,sans-serif;font-size:15px;background:'+(active?'var(--red)':'var(--dark3)')+';border:1px solid '+(active?'var(--red)':'rgba(255,255,255,0.1)')+';color:var(--white);cursor:pointer">'+z2.k+'.</button>';
+    });
+    h+='</div>';
+  }
+  h+=buildOthersRows(rows,z,s);
+  wrap.innerHTML=h;
+}
+
+function buildOthersRows(rows,z,s){
+  let h='<div style="display:flex;flex-direction:column;gap:2px">';
+  h+='<div style="display:flex;align-items:center;gap:12px;padding:6px 16px;font-family:Barlow Condensed,sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid rgba(255,255,255,0.07)">';
+  h+='<div style="flex:1">Hráč</div><div style="min-width:60px;text-align:center">Tip</div>';
+  if(s)h+='<div style="min-width:55px;text-align:right">Body</div>';
+  h+='</div>';
+  rows.forEach(r=>{
+    let pts=null,ptsColor='var(--muted2)',icon='';
+    if(s){
+      const rd=z.ds?s.d:s.h,rh=z.ds?s.h:s.d;
+      pts=calcPts(r.d,r.h,rd,rh);
+      if(pts===5){ptsColor='var(--gold)';icon='🎯';}
+      else if(pts===2){ptsColor='var(--green)';icon='✅';}
+      else{icon='❌';}
+    }
+    const bg=r.isMe?'rgba(212,18,30,0.06)':'var(--dark2)';
+    const border=r.isMe?'border:1px solid rgba(212,18,30,0.3)':'border:1px solid rgba(255,255,255,0.05)';
+    h+='<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;background:'+bg+';'+border+'">';
+    h+='<div style="flex:1;font-family:Barlow Condensed,sans-serif;font-size:14px;font-weight:700">'+r.nick+(r.isMe?' <span style="font-size:10px;color:var(--red);letter-spacing:1px">(já)</span>':'')+'</div>';
+    h+='<div style="font-family:Bebas Neue,sans-serif;font-size:20px;letter-spacing:2px;min-width:60px;text-align:center">'+r.d+' : '+r.h+'</div>';
+    if(s)h+='<div style="font-family:Bebas Neue,sans-serif;font-size:17px;color:'+ptsColor+';min-width:55px;text-align:right">'+icon+' '+pts+'b</div>';
+    h+='</div>';
+  });
+  h+='</div>';
+  if(s){const rd=z.ds?s.d:s.h,rh=z.ds?s.h:s.d;h+='<div style="text-align:center;margin-top:12px;font-family:Bebas Neue,sans-serif;font-size:13px;letter-spacing:2px;color:var(--muted2)">VÝSLEDEK: <span style="color:var(--white)">'+rd+' : '+rh+'</span></div>';}
+  return h;
+}
+
+window.switchOthersRound=function(kolo){
+  const wrap=document.getElementById('othersTabContent');
+  const sub=document.getElementById('othersSubtitle');
+  if(!wrap)return;
+  const z=ZAPASY.find(z2=>z2.k===kolo);if(!z)return;
+  const nick=localStorage.getItem('stip_nick')||'';
+  const opp=sh(z.ds?z.hos:z.dom);
+  if(sub)sub.textContent='Kolo '+z.k+' · Spartak vs. '+opp;
+  const rows=[];
+  Object.keys(allTips).forEach(n=>{
+    const tip=allTips[n]?allTips[n][z.k]:null;
+    if(!tip)return;
+    rows.push({nick:n,d:tip.d,h:tip.h,isMe:n===nick});
+  });
+  if(!rows.length){wrap.innerHTML='<div class="no-data">Žádné tipy pro kolo '+kolo+'</div>';return;}
+  rows.sort((a,b)=>b.isMe-a.isMe||(a.nick<b.nick?-1:1));
+  wrap.innerHTML=buildOthersRows(rows,z,sc(z.dat));
+};
 
 window.saveTip=async function(kolo){
   const nick=localStorage.getItem('stip_nick');if(!nick)return;
