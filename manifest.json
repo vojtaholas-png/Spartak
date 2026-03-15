@@ -1,0 +1,19 @@
+{
+  "name": "Beach Volejbal Lázně Toušeň",
+  "short_name": "Beach VB",
+  "description": "Přihlašování na beach volejbal – kurty Lázně Toušeň, každou středu 17:00–19:00",
+  "start_url": "/Spartak/beach-volleyball.html",
+  "scope": "/Spartak/",
+  "display": "standalone",
+  "background_color": "#daeef7",
+  "theme_color": "#063d5c",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f3d0.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
