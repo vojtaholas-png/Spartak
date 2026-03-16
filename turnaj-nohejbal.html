@@ -787,7 +787,7 @@
           </select>
         </div>
         <div>
-          <label>Postupují ze skupiny</label>
+          <label>Přímé postupy ze skupiny</label>
           <select id="advanceFrom" onchange="autosave()">
             <option value="1">1 tým</option>
             <option value="2" selected>2 týmy</option>
@@ -795,6 +795,36 @@
           </select>
           <div id="advanceHint" style="font-size:0.75rem;color:var(--muted);margin-top:5px"></div>
         </div>
+      </div>
+      <div style="margin-top:14px;display:flex;align-items:center;gap:10px">
+        <label style="margin:0;display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-size:0.88rem;color:var(--text)">
+          <input type="checkbox" id="wildcardEnabled" onchange="onWildcardChange()" style="width:16px;height:16px;accent-color:var(--accent)">
+          Přidat wild card (nejlepší N-tá místa napříč skupinami)
+        </label>
+      </div>
+      <div id="wildcardSettings" style="display:none;margin-top:12px">
+        <div class="notice" style="margin-bottom:12px">
+          🃏 Wild card týmy se vybírají porovnáním bodů/skóre ze stejné pozice ve skupinách
+        </div>
+        <div class="grid2">
+          <div>
+            <label>Z které pozice (wild card)</label>
+            <select id="wildcardPos" onchange="autosave()">
+              <option value="3">3. místa</option>
+              <option value="4">4. místa</option>
+            </select>
+          </div>
+          <div>
+            <label>Počet wild card týmů</label>
+            <select id="wildcardCount" onchange="autosave()">
+              <option value="1">1 tým</option>
+              <option value="2" selected>2 týmy</option>
+              <option value="3">3 týmy</option>
+              <option value="4">4 týmy</option>
+            </select>
+          </div>
+        </div>
+        <div id="wildcardHint" style="font-size:0.75rem;color:var(--accent);margin-top:8px"></div>
       </div>
     </div>
     <div id="rrSettings" style="display:none" class="mt-20">
@@ -959,7 +989,10 @@ let state = {
   groupMatches: {}, // "g0_0_1": {h,a,hs,as,done}
   bracket: [],      // [{round, matches:[{h,a,hs,as,done}]}]
   rrMatches: {},    // "0_1": {h,a,hs,as,done}
-  generated: false
+  generated: false,
+  wildcardEnabled: false,
+  wildcardPos: 3,
+  wildcardCount: 2
 };
 
 let currentBracketRef = null;
@@ -1033,6 +1066,9 @@ function autosave() {
   state.place = document.getElementById('tournamentPlace').value;
   state.numGroups = parseInt(document.getElementById('numGroups').value);
   state.advanceFrom = parseInt(document.getElementById('advanceFrom').value);
+  state.wildcardEnabled = document.getElementById('wildcardEnabled').checked;
+  state.wildcardPos = parseInt(document.getElementById('wildcardPos').value) || 3;
+  state.wildcardCount = parseInt(document.getElementById('wildcardCount').value) || 2;
   saveState();
 }
 
@@ -1054,6 +1090,10 @@ function populateSetupUI() {
   document.getElementById('numGroups').value = state.numGroups||2;
   updateAdvanceFromOptions();
   document.getElementById('advanceFrom').value = state.advanceFrom||2;
+  document.getElementById('wildcardEnabled').checked = state.wildcardEnabled||false;
+  document.getElementById('wildcardPos').value = state.wildcardPos||3;
+  document.getElementById('wildcardCount').value = state.wildcardCount||2;
+  onWildcardChange(false);
   selectFormat(state.format||'groups', false);
   renderTeams();
   updateSteps();
@@ -1177,13 +1217,67 @@ function generateGroups() {
 }
 
 function generatePlayoffFromGroups() {
-  // Qualify top N from each group
+  const qualified = getQualifiedTeams();
+  buildBracket(qualified);
+}
+
+function getQualifiedTeams() {
   const qualified = [];
+  // 1. Přímé postupy – top N z každé skupiny
   state.groups.forEach((g,gi)=>{
     const sorted = getGroupStandings(gi);
     for(let i=0;i<Math.min(state.advanceFrom,sorted.length);i++) qualified.push(sorted[i].idx);
   });
-  buildBracket(qualified);
+  // 2. Wild card – nejlepší N týmů z dané pozice napříč skupinami
+  if(state.wildcardEnabled) {
+    const wildcards = getWildcardTeams();
+    wildcards.forEach(w=>{ if(!qualified.includes(w)) qualified.push(w); });
+  }
+  return qualified;
+}
+
+function getWildcardTeams() {
+  const pos = (state.wildcardPos||3) - 1; // 0-indexed
+  const count = state.wildcardCount||2;
+  const candidates = [];
+
+  state.groups.forEach((g,gi)=>{
+    const sorted = getGroupStandings(gi);
+    if(sorted.length > pos) {
+      const team = sorted[pos];
+      candidates.push({
+        idx: team.idx,
+        pts: team.pts,
+        gd: team.gf - team.ga,
+        gf: team.gf,
+        groupName: g.name
+      });
+    }
+  });
+
+  // Sort: body desc, skóre rozdíl desc, vstřelené góly desc
+  candidates.sort((a,b)=> b.pts-a.pts || b.gd-a.gd || b.gf-a.gf);
+  return candidates.slice(0, count).map(c=>c.idx);
+}
+
+function onWildcardChange(save=true) {
+  const enabled = document.getElementById('wildcardEnabled').checked;
+  document.getElementById('wildcardSettings').style.display = enabled ? 'block' : 'none';
+  updateWildcardHint();
+  if(save) autosave();
+}
+
+function updateWildcardHint() {
+  const hint = document.getElementById('wildcardHint');
+  if(!hint) return;
+  const enabled = document.getElementById('wildcardEnabled').checked;
+  if(!enabled) { hint.textContent=''; return; }
+  const numGroups = parseInt(document.getElementById('numGroups').value)||2;
+  const adv = parseInt(document.getElementById('advanceFrom').value)||2;
+  const wcCount = parseInt(document.getElementById('wildcardCount').value)||2;
+  const wcPos = document.getElementById('wildcardPos').value;
+  const total = adv * numGroups + wcCount;
+  hint.textContent = `→ ${adv}×${numGroups} přímých + ${wcCount} wild card z ${wcPos}. míst = celkem ${total} týmů v playoff`;
 }
 
 function generateDirectPlayoff() {
@@ -1299,6 +1393,10 @@ function renderGroups() {
   const badgeClasses = ['badge-a','badge-b','badge-c','badge-d'];
 
   let html = '';
+
+  // Předpočítáme wild card týmy pro zvýraznění
+  const wildcardTeamIdxs = (state.wildcardEnabled) ? getWildcardTeams() : [];
+
   state.groups.forEach((g,gi)=>{
     const standings = getGroupStandings(gi);
     const bc = badgeClasses[gi%4];
@@ -1317,10 +1415,13 @@ function renderGroups() {
           </tr></thead>
           <tbody>
             ${standings.map((s,i)=>{
-              const rowClass = i<state.advanceFrom?'qual-row':'';
+              const isDirectQual = i < state.advanceFrom;
+              const isWildcard = !isDirectQual && wildcardTeamIdxs.includes(s.idx);
+              const rowClass = isDirectQual ? 'qual-row' : isWildcard ? 'qual-row2' : '';
+              const wcBadge = isWildcard ? ' <span style="font-size:0.65rem;background:rgba(240,180,41,0.2);color:var(--accent);border-radius:3px;padding:1px 5px;font-family:Barlow Condensed,sans-serif;letter-spacing:1px">WC</span>' : '';
               return `<tr class="${rowClass}">
                 <td class="pos">${i+1}</td>
-                <td class="team-name">${state.teams[s.idx]}</td>
+                <td class="team-name">${state.teams[s.idx]}${wcBadge}</td>
                 <td>${s.w+s.d+s.l}</td>
                 <td style="color:var(--green)">${s.w}</td>
                 <td style="color:var(--muted)">${s.d}</td>
@@ -1332,7 +1433,8 @@ function renderGroups() {
           </tbody>
         </table>
         <div style="margin-top:8px;font-size:0.75rem;color:var(--green)">
-          ● Postupují: top ${state.advanceFrom}
+          ● Přímý postup: top ${state.advanceFrom}
+          ${state.wildcardEnabled ? `<span style="color:var(--accent);margin-left:10px">🃏 Wild card: ${state.wildcardCount} nejlepších z ${state.wildcardPos}. míst</span>` : ''}
         </div>
       </div>
       <div class="card" style="padding:16px">
@@ -1342,6 +1444,43 @@ function renderGroups() {
     </div>
     </div>`;
   });
+
+  // Wild card tabulka – přehled všech N-tých míst
+  if(state.wildcardEnabled) {
+    const pos = (state.wildcardPos||3) - 1;
+    const candidates = [];
+    state.groups.forEach((g,gi)=>{
+      const sorted = getGroupStandings(gi);
+      if(sorted.length > pos) {
+        const team = sorted[pos];
+        candidates.push({idx:team.idx, pts:team.pts, gd:team.gf-team.ga, gf:team.gf, ga:team.ga, groupName:g.name, w:team.w, d:team.d, l:team.l});
+      }
+    });
+    candidates.sort((a,b)=>b.pts-a.pts||b.gd-a.gd||b.gf-a.gf);
+    const wcWinners = candidates.slice(0, state.wildcardCount).map(c=>c.idx);
+
+    html += `<div class="card" style="border-color:rgba(240,180,41,0.3);margin-top:8px">
+      <div class="card-title"><span>🃏</span> Wild Card – přehled ${state.wildcardPos}. míst</div>
+      <table class="standings-table">
+        <thead><tr>
+          <th>#</th><th style="text-align:left">Tým</th><th>Sk.</th><th>V</th><th>R</th><th>P</th><th>Skóre</th><th>Body</th><th>Postup</th>
+        </tr></thead>
+        <tbody>
+          ${candidates.map((c,i)=>`<tr>
+            <td class="pos">${i+1}</td>
+            <td class="team-name">${state.teams[c.idx]}</td>
+            <td><span class="group-badge ${['badge-a','badge-b','badge-c','badge-d'][state.groups.findIndex(g=>g.name===c.groupName)%4]}">${c.groupName}</span></td>
+            <td style="color:var(--green)">${c.w}</td>
+            <td style="color:var(--muted)">${c.d}</td>
+            <td style="color:var(--red)">${c.l}</td>
+            <td style="font-family:'Barlow Condensed'">${c.gf}:${c.ga}</td>
+            <td class="pts">${c.pts}</td>
+            <td>${wcWinners.includes(c.idx) ? '<span style="color:var(--accent);font-weight:700;font-family:Barlow Condensed">✓ WC</span>' : '<span style="color:var(--muted)">—</span>'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  }
 
   el.innerHTML = html;
 }
@@ -1386,11 +1525,7 @@ function saveGroupMatch(key) {
 }
 
 function regeneratePlayoffQualified() {
-  const qualified = [];
-  state.groups.forEach((g,gi)=>{
-    const sorted = getGroupStandings(gi);
-    for(let i=0;i<Math.min(state.advanceFrom,sorted.length);i++) qualified.push(sorted[i].idx);
-  });
+  const qualified = getQualifiedTeams();
   // rebuild bracket keeping existing results
   const oldBracket = JSON.parse(JSON.stringify(state.bracket));
   buildBracket(qualified);
@@ -1658,7 +1793,7 @@ document.getElementById('bracketModal').addEventListener('click', function(e) {
 init();
 
 // Expose globals
-window.addTeam=addTeam; window.onNumGroupsChange=onNumGroupsChange; window.updateAdvanceFromOptions=updateAdvanceFromOptions; window.removeTeam=removeTeam; window.selectFormat=selectFormat;
+window.addTeam=addTeam; window.onNumGroupsChange=onNumGroupsChange; window.updateAdvanceFromOptions=updateAdvanceFromOptions; window.onWildcardChange=onWildcardChange; window.removeTeam=removeTeam; window.selectFormat=selectFormat;
 window.generateTournament=generateTournament; window.loadDemo=loadDemo; window.resetAll=resetAll;
 window.showPage=showPage; window.autosave=autosave;
 window.setGroupScore=setGroupScore; window.saveGroupMatch=saveGroupMatch;
