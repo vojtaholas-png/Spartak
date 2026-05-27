@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🎲 Závodní Hra</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --p1:#FF6B6B;--p2:#4ECDC4;--bg:#0f0f1a;--card:#1a1a2e;--card2:#16213e;
+  --accent:#e94560;--gold:#FFD700;--cell-h:52px;
+}
+body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;color:white;overflow-x:hidden;}
+
+/* LOBBY */
+#lobby{width:100%;min-height:100vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:24px;gap:16px;}
+.logo{font-family:'Fredoka One',cursive;font-size:3rem;
+  background:linear-gradient(135deg,var(--p1),var(--p2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  text-align:center;line-height:1.1;}
+.subtitle{color:#888;font-size:0.9rem;text-align:center;}
+.card{background:var(--card);border-radius:20px;padding:22px;
+  width:100%;max-width:360px;border:1px solid rgba(255,255,255,0.07);}
+.card h3{font-family:'Fredoka One',cursive;font-size:1.15rem;margin-bottom:14px;color:var(--gold);}
+.btn{width:100%;padding:15px;border-radius:14px;border:none;
+  font-family:'Fredoka One',cursive;font-size:1.15rem;cursor:pointer;
+  transition:transform 0.1s;letter-spacing:0.5px;color:white;}
+.btn:active{transform:scale(0.97);}
+.btn-primary{background:linear-gradient(135deg,var(--p1),#ff8e53);
+  box-shadow:0 4px 20px rgba(255,107,107,0.4);}
+.btn-join{background:linear-gradient(135deg,#a29bfe,#6c5ce7);
+  box-shadow:0 4px 20px rgba(108,92,231,0.4);}
+.btn-new{background:linear-gradient(135deg,var(--p2),#45b7d1);
+  box-shadow:0 4px 20px rgba(78,205,196,0.35);}
+input[type=text]{width:100%;padding:13px 16px;border-radius:12px;
+  border:2px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);
+  color:white;font-family:'Nunito',sans-serif;font-size:1rem;font-weight:700;
+  outline:none;margin-bottom:10px;transition:border-color 0.2s;}
+input[type=text]:focus{border-color:var(--p2);}
+.share-box{background:rgba(255,215,0,0.07);border:1.5px dashed rgba(255,215,0,0.35);
+  border-radius:12px;padding:14px;margin:10px 0;}
+.share-url{font-size:0.72rem;color:#ccc;word-break:break-all;line-height:1.5;margin-bottom:10px;}
+.btn-copy{width:100%;padding:10px;border-radius:10px;border:none;
+  background:rgba(255,215,0,0.15);color:var(--gold);
+  font-family:'Fredoka One',cursive;font-size:0.95rem;cursor:pointer;}
+.waiting-dots span{animation:blink 1.2s infinite;display:inline-block;}
+.waiting-dots span:nth-child(2){animation-delay:0.2s;}
+.waiting-dots span:nth-child(3){animation-delay:0.4s;}
+@keyframes blink{0%,80%,100%{opacity:0}40%{opacity:1}}
+
+/* GAME */
+#game{display:none;width:100%;max-width:420px;padding:10px 12px 20px;
+  flex-direction:column;align-items:center;gap:10px;min-height:100vh;}
+.game-header{width:100%;display:flex;justify-content:space-between;align-items:center;padding:4px 2px;}
+.game-title{font-family:'Fredoka One',cursive;font-size:1.35rem;color:var(--gold);}
+.room-info{font-size:0.7rem;color:#555;font-weight:700;letter-spacing:2px;}
+
+/* HUD */
+.hud{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.ph{background:var(--card);border-radius:14px;padding:11px 12px;
+  border:2px solid transparent;transition:all 0.3s;position:relative;}
+.ph.p1{border-left:4px solid var(--p1);}
+.ph.p2{border-left:4px solid var(--p2);}
+.ph.active{border-color:var(--gold);box-shadow:0 0 14px rgba(255,215,0,0.25);}
+.ph-name{font-weight:800;font-size:0.8rem;margin-bottom:2px;}
+.ph.p1 .ph-name{color:var(--p1);}
+.ph.p2 .ph-name{color:var(--p2);}
+.ph-pos{font-family:'Fredoka One',cursive;font-size:1.7rem;line-height:1;}
+.ph-lbl{font-size:0.6rem;color:#666;text-transform:uppercase;letter-spacing:1px;margin-top:1px;}
+.turn-badge{position:absolute;top:7px;right:8px;background:var(--gold);
+  color:#111;font-size:0.5rem;font-weight:900;padding:2px 6px;
+  border-radius:20px;letter-spacing:0.5px;text-transform:uppercase;}
+
+/* BOARD */
+.board-wrap{width:100%;background:var(--card);border-radius:18px;padding:10px;
+  border:1px solid rgba(255,255,255,0.06);}
+.board{display:flex;flex-direction:column;gap:3px;}
+.cell{display:flex;align-items:center;min-height:var(--cell-h);}
+.cn{font-family:'Fredoka One',cursive;font-size:1rem;
+  min-width:32px;text-align:center;color:#444;flex-shrink:0;}
+.cb{flex:1;min-height:var(--cell-h);border-radius:8px;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);
+  display:flex;align-items:center;justify-content:center;position:relative;
+  transition:background 0.3s;}
+.cell-finish .cb{background:rgba(255,215,0,0.1);border-color:rgba(255,215,0,0.25);}
+.cell-start .cb{background:rgba(78,205,196,0.1);border-color:rgba(78,205,196,0.25);}
+.cell-lbl{font-family:'Fredoka One',cursive;font-size:0.95rem;letter-spacing:3px;}
+.cell-finish .cell-lbl{color:var(--gold);}
+.cell-start .cell-lbl{color:var(--p2);}
+.tokens{display:flex;gap:6px;align-items:center;}
+.tok{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:0.9rem;border:2px solid rgba(255,255,255,0.3);
+  box-shadow:0 2px 8px rgba(0,0,0,0.5);
+  animation:pop 0.3s cubic-bezier(0.68,-0.55,0.265,1.55);}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+.tok-p1{background:var(--p1);}
+.tok-p2{background:var(--p2);}
+
+/* CONTROLS */
+.controls{width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;}
+
+/* DICE SVG */
+.dice-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;}
+.dice{width:88px;height:88px;background:white;border-radius:18px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 24px rgba(0,0,0,0.6);cursor:pointer;
+  transition:transform 0.1s;user-select:none;font-size:3.2rem;}
+.dice:active{transform:scale(0.93);}
+.dice.rolling{animation:roll 0.45s ease;}
+@keyframes roll{
+  0%{transform:rotate(0) scale(1)}20%{transform:rotate(-20deg) scale(0.88)}
+  40%{transform:rotate(18deg) scale(1.12)}60%{transform:rotate(-12deg) scale(0.94)}
+  80%{transform:rotate(9deg) scale(1.06)}100%{transform:rotate(0) scale(1)}}
+
+.status{text-align:center;font-weight:700;font-size:0.88rem;color:#888;min-height:22px;padding:0 8px;}
+.exact-warn{background:rgba(255,107,107,0.12);border:1px solid rgba(255,107,107,0.3);
+  border-radius:10px;padding:8px 14px;font-size:0.83rem;color:var(--p1);
+  font-weight:700;text-align:center;width:100%;}
+.roll-btn{background:linear-gradient(135deg,var(--accent),#ff6b35);color:white;
+  border:none;border-radius:16px;padding:15px;
+  font-family:'Fredoka One',cursive;font-size:1.25rem;cursor:pointer;
+  box-shadow:0 4px 20px rgba(233,69,96,0.5);transition:all 0.15s;width:100%;}
+.roll-btn:active{transform:scale(0.97);}
+.roll-btn:disabled{opacity:0.3;cursor:not-allowed;box-shadow:none;}
+
+/* TOAST */
+.toast{position:fixed;bottom:28px;left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:rgba(20,20,35,0.97);color:white;padding:13px 22px;
+  border-radius:14px;font-weight:700;font-size:0.9rem;z-index:999;
+  transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(10px);
+  text-align:center;max-width:300px;pointer-events:none;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+/* WIN */
+#win{display:none;position:fixed;inset:0;background:rgba(8,8,18,0.96);z-index:100;
+  flex-direction:column;align-items:center;justify-content:center;
+  gap:18px;padding:28px;backdrop-filter:blur(8px);}
+.win-emoji{font-size:5rem;animation:pop 0.5s cubic-bezier(0.68,-0.55,0.265,1.55);}
+.win-title{font-family:'Fredoka One',cursive;font-size:2.2rem;text-align:center;}
+.win-sub{color:#aaa;text-align:center;font-size:0.95rem;}
+.confetti-box{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.cp{position:absolute;border-radius:2px;animation:fall linear forwards;}
+@keyframes fall{0%{transform:translateY(-20px) rotate(0);opacity:1}100%{transform:translateY(105vh) rotate(720deg);opacity:0}}
+</style>
+</head>
+<body>
+
+<!-- LOBBY -->
+<div id="lobby">
+  <div class="logo">🎲 Závodní<br>Hra</div>
+  <p class="subtitle">Multiplayer pro 2 hráče na 2 telefonech</p>
+
+  <div class="card" id="card-create">
+    <h3>🏠 Vytvořit hru</h3>
+    <button class="btn btn-primary" id="btn-create">Vytvořit místnost</button>
+    <div id="share-section" style="display:none">
+      <div class="share-box" id="share-box">
+        <div class="share-url" id="share-url"></div>
+        <button class="btn-copy" id="btn-copy">📋 Kopírovat odkaz</button>
+      </div>
+      <p class="waiting-dots" style="color:#888;font-size:0.85rem;text-align:center;margin-top:8px">
+        Čekám na hráče 2
+        <span>.</span><span>.</span><span>.</span>
+      </p>
+    </div>
+  </div>
+
+  <div class="card" id="card-join">
+    <h3>🔗 Připojit se ke hře</h3>
+    <p style="font-size:0.8rem;color:#777;margin-bottom:10px">Otevři odkaz od kamaráda — nebo sem vlož ID místnosti:</p>
+    <input type="text" id="join-input" placeholder="ID místnosti (z odkazu)">
+    <button class="btn btn-join" id="btn-join">Připojit se</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="game">
+  <div class="game-header">
+    <div class="game-title">🎲 Závod na FINISH</div>
+    <div class="room-info" id="room-lbl">---</div>
+  </div>
+
+  <div class="hud">
+    <div class="ph p1" id="ph-p1">
+      <div class="ph-name">🔴 Hráč 1</div>
+      <div class="ph-pos" id="pos-p1">0</div>
+      <div class="ph-lbl">políčko</div>
+    </div>
+    <div class="ph p2" id="ph-p2">
+      <div class="ph-name">🔵 Hráč 2</div>
+      <div class="ph-pos" id="pos-p2">0</div>
+      <div class="ph-lbl">políčko</div>
+    </div>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="controls">
+    <div class="dice-wrap">
+      <div class="dice" id="dice">🎲</div>
+      <div class="exact-warn" id="exact-warn" style="display:none"></div>
+      <div class="status" id="status">Připravuji...</div>
+      <button class="roll-btn" id="roll-btn" disabled>🎲 Hodit kostkou</button>
+    </div>
+  </div>
+</div>
+
+<!-- WIN -->
+<div id="win">
+  <div class="confetti-box" id="confetti"></div>
+  <div class="win-emoji" id="win-emoji">🏆</div>
+  <div class="win-title" id="win-title"></div>
+  <div class="win-sub" id="win-sub"></div>
+  <button class="btn btn-new" style="max-width:300px;margin-top:10px" id="btn-new">🔄 Nová hra</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────
+const FINISH = 12;
+const DICE_E = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+const POLL_MS = 1200;
+
+// ── STATE ───────────────────────────────────────────────────
+let myRole = null;       // 'p1' | 'p2'
+let binId  = null;
+let gs     = null;       // game state
+let poll   = null;
+let lastSig = '';
+let busy   = false;
+
+// ── JSONBIN API ──────────────────────────────────────────────
+async function binCreate(data) {
+  const r = await fetch('https://api.jsonbin.io/v3/b', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Bin-Name':'zarodni-hra','X-Bin-Private':'false'},
+    body:JSON.stringify(data)
+  });
+  const j = await r.json();
+  return j?.metadata?.id;
+}
+async function binRead(id) {
+  const r = await fetch('https://api.jsonbin.io/v3/b/'+id+'/latest');
+  const j = await r.json();
+  return j?.record;
+}
+async function binWrite(id, data) {
+  await fetch('https://api.jsonbin.io/v3/b/'+id, {
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(data)
+  });
+}
+
+// ── INITIAL STATE ────────────────────────────────────────────
+function mkState() {
+  return {p1:0,p2:0,turn:'p1',phase:'waiting',winner:null,
+          roll:null,lastBy:null,lastTo:null,p2ok:false,ts:Date.now()};
+}
+
+// ── LOBBY ────────────────────────────────────────────────────
+document.getElementById('btn-create').addEventListener('click', async function() {
+  this.textContent = 'Vytvářím...';
+  this.disabled = true;
+  try {
+    const state = mkState();
+    binId = await binCreate(state);
+    if (!binId) throw new Error();
+    myRole = 'p1';
+    gs = state;
+
+    const url = location.href.split('?')[0] + '?r=' + binId;
+    document.getElementById('share-url').textContent = url;
+    document.getElementById('btn-copy').onclick = () => {
+      navigator.clipboard.writeText(url).then(() => toast('Odkaz zkopírován! 📋'));
+    };
+    document.getElementById('share-section').style.display = 'block';
+    this.style.display = 'none';
+
+    poll = setInterval(waitForP2, POLL_MS);
+  } catch(e) {
+    this.textContent = 'Vytvořit místnost';
+    this.disabled = false;
+    toast('Chyba sítě 😕 Zkus znovu');
+  }
+});
+
+document.getElementById('btn-join').addEventListener('click', async function() {
+  const id = document.getElementById('join-input').value.trim();
+  if (!id) { toast('Zadej ID místnosti!'); return; }
+  await doJoin(id);
+});
+
+async function waitForP2() {
+  try {
+    const s = await binRead(binId);
+    if (s?.p2ok) {
+      clearInterval(poll);
+      gs = s;
+      startGame();
+    }
+  } catch(e) {}
+}
+
+async function doJoin(id) {
+  const btn = document.getElementById('btn-join');
+  btn.textContent = 'Připojuji...';
+  btn.disabled = true;
+  try {
+    const s = await binRead(id);
+    if (!s) throw new Error('not found');
+    if (s.p2ok) { toast('Místnost je plná!'); btn.textContent='Připojit se'; btn.disabled=false; return; }
+    binId = id;
+    myRole = 'p2';
+    const ns = {...s, p2ok:true, phase:'playing', ts:Date.now()};
+    await binWrite(binId, ns);
+    gs = ns;
+    startGame();
+  } catch(e) {
+    toast('Nepodařilo se připojit 😕');
+    btn.textContent = 'Připojit se';
+    btn.disabled = false;
+  }
+}
+
+// Auto-join from URL param
+(function() {
+  const p = new URLSearchParams(location.search);
+  const r = p.get('r');
+  if (r) {
+    document.getElementById('card-create').style.display = 'none';
+    setTimeout(() => doJoin(r), 300);
+  }
+})();
+
+// ── GAME ─────────────────────────────────────────────────────
+function startGame() {
+  document.getElementById('lobby').style.display = 'none';
+  document.getElementById('game').style.display = 'flex';
+  document.getElementById('room-lbl').textContent = '🏠 '+binId.slice(-5).toUpperCase();
+  buildBoard();
+  render();
+  clearInterval(poll);
+  poll = setInterval(pollState, POLL_MS);
+}
+
+async function pollState() {
+  try {
+    const s = await binRead(binId);
+    if (!s) return;
+    const sig = JSON.stringify(s);
+    if (sig === lastSig) return;
+    lastSig = sig;
+    const prev = gs;
+    gs = s;
+    if (s.lastBy && s.lastBy !== myRole && s.roll) {
+      const who = s.lastBy==='p1'?'🔴 Hráč 1':'🔵 Hráč 2';
+      toast(who+' hodil '+DICE_E[s.roll-1]+' → políčko '+s.lastTo);
+    }
+    render();
+    if (s.phase==='finished' && s.winner) showWin(s.winner);
+  } catch(e) {}
+}
+
+// ── BOARD BUILD ──────────────────────────────────────────────
+function buildBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  // FINISH at top (cell 12)
+  board.appendChild(mkCell(FINISH,'finish','FINISH'));
+  for (let i = FINISH-1; i >= 1; i--) board.appendChild(mkCell(i,'normal',null));
+  // START at bottom (cell 0)
+  board.appendChild(mkCell(0,'start','START'));
+}
+
+function mkCell(n, type, lbl) {
+  const cell = document.createElement('div');
+  cell.className = 'cell cell-'+type;
+  cell.id = 'cell-'+n;
+
+  const cn = document.createElement('div');
+  cn.className = 'cn';
+  cn.textContent = (type==='normal') ? n : '';
+  cell.appendChild(cn);
+
+  const cb = document.createElement('div');
+  cb.className = 'cb';
+  if (lbl) {
+    const l = document.createElement('div');
+    l.className = 'cell-lbl';
+    l.textContent = lbl;
+    cb.appendChild(l);
+  }
+  const toks = document.createElement('div');
+  toks.className = 'tokens';
+  toks.id = 'toks-'+n;
+  cb.appendChild(toks);
+  cell.appendChild(cb);
+  return cell;
+}
+
+// ── RENDER ───────────────────────────────────────────────────
+function render() {
+  if (!gs) return;
+  // Clear tokens
+  document.querySelectorAll('.tokens').forEach(el => el.innerHTML='');
+  // Place tokens
+  placeToken(gs.p1,'p1', myRole==='p1'?'👤':'🔴');
+  placeToken(gs.p2,'p2', myRole==='p2'?'👤':'🔵');
+  // HUD
+  document.getElementById('pos-p1').textContent = gs.p1;
+  document.getElementById('pos-p2').textContent = gs.p2;
+  // Active turn highlight
+  ['p1','p2'].forEach(p => {
+    const el = document.getElementById('ph-'+p);
+    el.classList.toggle('active', gs.turn===p && gs.phase!=='finished');
+    el.querySelectorAll('.turn-badge').forEach(b => b.remove());
+    if (gs.turn===p && gs.phase!=='finished') {
+      const b = document.createElement('div');
+      b.className = 'turn-badge';
+      b.textContent = gs.turn===myRole ? 'TY!' : 'NA TAHU';
+      el.appendChild(b);
+    }
+  });
+  // Controls
+  const myPos = myRole==='p1' ? gs.p1 : gs.p2;
+  const remaining = FINISH - myPos;
+  const isMyTurn = gs.turn===myRole && gs.phase==='playing';
+  const rollBtn = document.getElementById('roll-btn');
+  const statusEl = document.getElementById('status');
+  const exactEl = document.getElementById('exact-warn');
+  rollBtn.disabled = !isMyTurn || busy;
+  if (gs.phase==='finished') {
+    statusEl.textContent = '🏁 Hra skončila!';
+    exactEl.style.display = 'none';
+  } else if (isMyTurn) {
+    statusEl.textContent = '🎯 Tvůj tah!';
+    if (remaining <= 6) {
+      exactEl.style.display = 'block';
+      exactEl.textContent = '⚠️ Musíš hodit přesně '+remaining+' pro FINISH!';
+    } else {
+      exactEl.style.display = 'none';
+    }
+  } else {
+    const other = myRole==='p1' ? 'Hráč 2 🔵' : 'Hráč 1 🔴';
+    statusEl.textContent = '⏳ Čekám na '+other+'...';
+    exactEl.style.display = 'none';
+  }
+  // Scroll my token into view
+  const myCell = document.getElementById('cell-'+myPos);
+  if (myCell) setTimeout(() => myCell.scrollIntoView({behavior:'smooth',block:'center'}), 200);
+}
+
+function placeToken(pos, player, emoji) {
+  const row = document.getElementById('toks-'+pos);
+  if (!row) return;
+  const t = document.createElement('div');
+  t.className = 'tok tok-'+player;
+  t.textContent = emoji;
+  row.appendChild(t);
+}
+
+// ── ROLL DICE ────────────────────────────────────────────────
+document.getElementById('roll-btn').addEventListener('click', function() {
+  if (busy || gs.turn !== myRole || gs.phase !== 'playing') return;
+  busy = true;
+  this.disabled = true;
+  const diceEl = document.getElementById('dice');
+  diceEl.classList.add('rolling');
+  let n = 0;
+  const iv = setInterval(() => {
+    diceEl.textContent = DICE_E[Math.floor(Math.random()*6)];
+    if (++n >= 10) {
+      clearInterval(iv);
+      diceEl.classList.remove('rolling');
+      applyRoll();
+    }
+  }, 70);
+});
+
+async function applyRoll() {
+  const roll = Math.floor(Math.random()*6)+1;
+  document.getElementById('dice').textContent = DICE_E[roll-1];
+
+  const myPos = myRole==='p1' ? gs.p1 : gs.p2;
+  const remaining = FINISH - myPos;
+  let newPos;
+
+  if (roll === remaining) {
+    newPos = FINISH;
+  } else if (roll > remaining) {
+    newPos = myPos;
+    toast('💥 Moc! Musíš hodit přesně '+remaining+'. Zůstáváš!');
+  } else {
+    newPos = myPos + roll;
+  }
+
+  const ns = {...gs};
+  if (myRole==='p1') ns.p1 = newPos; else ns.p2 = newPos;
+  ns.roll = roll;
+  ns.lastBy = myRole;
+  ns.lastTo = newPos;
+
+  if (newPos === FINISH) {
+    ns.phase = 'finished';
+    ns.winner = myRole;
+    ns.turn = null;
+  } else {
+    ns.turn = myRole==='p1'?'p2':'p1';
+  }
+  ns.ts = Date.now();
+
+  try {
+    await binWrite(binId, ns);
+    gs = ns;
+    lastSig = JSON.stringify(ns);
+    render();
+    if (ns.phase==='finished') showWin(myRole);
+  } catch(e) {
+    toast('Chyba ukládání 😕');
+  }
+  busy = false;
+  document.getElementById('roll-btn').disabled = (ns.turn !== myRole || ns.phase==='finished');
+}
+
+// ── WIN ──────────────────────────────────────────────────────
+function showWin(winner) {
+  clearInterval(poll);
+  const isMe = winner===myRole;
+  const winEl = document.getElementById('win');
+  document.getElementById('win-emoji').textContent = isMe?'🏆':'😢';
+  document.getElementById('win-title').textContent = isMe?'VYHRÁVÁŠ! 🎉':'Prohrál jsi...';
+  document.getElementById('win-title').style.color = isMe?'var(--gold)':'#888';
+  document.getElementById('win-sub').textContent = isMe
+    ? 'Dostals se do FINISHE jako první!'
+    : (winner==='p1'?'🔴 Hráč 1':'🔵 Hráč 2')+' dorazil do FINISHE dřív.';
+  winEl.style.display = 'flex';
+  if (isMe) confetti();
+}
+
+document.getElementById('btn-new').addEventListener('click', () => {
+  location.href = location.pathname;
+});
+
+function confetti() {
+  const box = document.getElementById('confetti');
+  const colors = ['#FF6B6B','#4ECDC4','#FFD700','#FF8E53','#A29BFE','#FD79A8','#6C5CE7'];
+  for (let i=0;i<70;i++) {
+    const p = document.createElement('div');
+    p.className='cp';
+    p.style.left = Math.random()*100+'%';
+    p.style.top = '-15px';
+    p.style.width = (6+Math.random()*8)+'px';
+    p.style.height = (6+Math.random()*8)+'px';
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    p.style.animationDuration = (1.5+Math.random()*2.5)+'s';
+    p.style.animationDelay = Math.random()*2+'s';
+    box.appendChild(p);
+  }
+}
+
+// ── TOAST ────────────────────────────────────────────────────
+let toastT;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => el.classList.remove('show'), 3200);
+}
+</script>
+</body>
+</html>
