@@ -1219,7 +1219,7 @@ function buildMatchCard(m){
         sb.addEventListener('click',function(){
           var h=parseInt(document.getElementById('rh_'+mid).value),a=parseInt(document.getElementById('ra_'+mid).value);
           if(isNaN(h)||isNaN(a)){showToast('Zadej oba');return;}
-          saveResultLS(mid,h,a);showToast('Uloženo!');renderMatchList();});
+          saveResultLS(mid,h,a);showToast('Uloženo!');var _sy=window.scrollY;renderMatchList();requestAnimationFrame(function(){window.scrollTo(0,_sy);});});
         act.appendChild(sb);})(m.id);
     }
   }else{
