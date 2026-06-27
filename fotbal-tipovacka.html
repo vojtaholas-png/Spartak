@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MS Fotbal 2026 – Tipovačka</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nunito:wght@400;600;700;800;900&family=Teko:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --grass:#0a4a1a;--grass2:#0d5c20;--grass3:#116b26;
+  --pitch:#1a7a30;--line:rgba(255,255,255,0.15);
+  --gold:#f7c948;--gold2:#e0a800;
+  --red:#e63946;--green:#2dc653;--dim:#7aab8a;
+  --surface:rgba(0,0,0,0.35);--surface2:rgba(0,0,0,0.5);
+  --white:#ffffff;--text:#e8f5eb;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:var(--grass);color:var(--text);
+  font-family:'Nunito',sans-serif;font-weight:600;
+  min-height:100vh;overflow-x:hidden;
+}
+
+/* ── PITCH BACKGROUND ── */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 60px,
+      transparent 60px, transparent 120px
+    ),
+    linear-gradient(160deg,#0a4a1a 0%,#0d5c20 40%,#0a4a1a 100%);
+}
+body>*{position:relative;z-index:1;}
+
+/* ── HEADER ── */
+.header{
+  position:relative;overflow:hidden;
+  background:linear-gradient(180deg,rgba(0,0,0,0.7) 0%,rgba(0,0,0,0.4) 100%);
+  border-bottom:3px solid var(--gold);
+  padding:0;text-align:center;
+}
+/* Pitch top arc */
+.header-pitch{
+  position:relative;padding:28px 20px 24px;
+  background:
+    radial-gradient(ellipse 100% 80% at 50% 130%, rgba(255,255,255,0.04) 0%, transparent 70%);
+}
+/* Center circle */
+.header-pitch::before{
+  content:'';position:absolute;
+  width:140px;height:140px;border-radius:50%;
+  border:2px solid rgba(255,255,255,0.07);
+  bottom:-30px;left:50%;transform:translateX(-50%);
+}
+/* Center line */
+.header-pitch::after{
+  content:'';position:absolute;
+  left:0;right:0;bottom:0;height:2px;
+  background:rgba(255,255,255,0.06);
+}
+.header-badge{
+  display:inline-block;
+  background:var(--gold);color:#000;
+  font-family:'Teko',sans-serif;font-weight:700;font-size:11px;
+  letter-spacing:4px;text-transform:uppercase;
+  padding:3px 16px;border-radius:2px;margin-bottom:10px;
+}
+.header h1{
+  font-family:'Black Han Sans',sans-serif;
+  font-size:clamp(40px,9vw,76px);
+  letter-spacing:2px;line-height:.9;
+  background:linear-gradient(160deg,#fff 0%,var(--gold) 60%,#ff9500 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  filter:drop-shadow(0 0 30px rgba(247,201,72,.3));
+}
+.header-sub{
+  font-family:'Teko',sans-serif;font-weight:400;
+  font-size:13px;letter-spacing:5px;color:var(--dim);
+  text-transform:uppercase;margin-top:6px;
+}
+.header-flags{
+  display:flex;justify-content:center;gap:4px;
+  margin-top:14px;font-size:20px;flex-wrap:wrap;opacity:.8;
+}
+
+/* ── SCORING BAR ── */
+.scoring-bar{
+  display:flex;justify-content:center;flex-wrap:wrap;
+  background:rgba(0,0,0,0.4);border-bottom:1px solid rgba(247,201,72,.2);
+}
+.sc-item{
+  padding:8px 16px;font-size:12px;color:var(--dim);font-weight:700;
+  border-right:1px solid rgba(255,255,255,.05);white-space:nowrap;
+  font-family:'Nunito';letter-spacing:.3px;
+}
+.sc-item:last-child{border-right:none;}
+.sc-item b{font-family:'Teko';font-size:20px;color:var(--gold);margin-right:4px;vertical-align:middle;font-weight:700;}
+
+/* ── LOGIN ── */
+#login-screen{
+  display:flex;flex-direction:column;align-items:center;
+  padding:40px 16px 60px;min-height:60vh;
+}
+.login-h{
+  font-family:'Black Han Sans';font-size:28px;letter-spacing:2px;
+  color:var(--gold);margin-bottom:4px;
+  text-shadow:0 0 20px rgba(247,201,72,.3);
+}
+.login-sub{color:var(--dim);font-size:13px;margin-bottom:28px;}
+.player-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:520px;width:100%;}
+@media(max-width:480px){.player-grid{grid-template-columns:repeat(2,1fr);}}
+.player-btn{
+  background:var(--surface);
+  border:2px solid rgba(255,255,255,0.08);
+  border-radius:14px;padding:18px 10px 14px;
+  cursor:pointer;text-align:center;transition:all .2s;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  backdrop-filter:blur(8px);
+}
+.player-btn:hover{border-color:var(--gold);background:rgba(247,201,72,.1);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.player-btn.no-pin{border-style:dashed;}
+.avatar-wrap{width:52px;height:52px;border-radius:50%;overflow:hidden;flex-shrink:0;}
+.avatar-wrap svg{width:100%;height:100%;}
+.p-name{font-family:'Teko';font-weight:600;font-size:16px;letter-spacing:.5px;color:var(--white);}
+.p-status{font-size:10px;color:var(--dim);font-weight:700;}
+
+/* ── PIN OVERLAY ── */
+.pin-overlay{position:fixed;inset:0;background:rgba(0,30,0,.88);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:900;padding:20px;}
+.pin-box{
+  background:rgba(10,50,20,.95);border:1px solid rgba(247,201,72,.2);
+  border-radius:20px;padding:28px 24px;max-width:300px;width:100%;text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+}
+.pin-who{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;}
+.pin-who-name{font-family:'Teko';font-weight:600;font-size:22px;color:var(--white);}
+.pin-label{font-size:11px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;font-weight:700;}
+.pin-note{font-size:11px;color:var(--dim);line-height:1.5;margin-bottom:12px;}
+.pin-dots{display:flex;justify-content:center;gap:10px;margin-bottom:16px;}
+.pin-dot{width:13px;height:13px;border-radius:50%;border:2px solid var(--dim);background:transparent;transition:all .15s;}
+.pin-dot.filled{background:var(--gold);border-color:var(--gold);box-shadow:0 0 8px rgba(247,201,72,.4);}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.kbtn{
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);
+  border-radius:10px;padding:14px;font-family:'Teko';font-weight:600;font-size:22px;
+  color:var(--white);cursor:pointer;transition:all .12s;
+}
+.kbtn:hover{background:rgba(247,201,72,.15);border-color:rgba(247,201,72,.4);}
+.kbtn:active{transform:scale(.92);}
+.kbtn.sym{font-family:'Nunito';font-size:14px;font-weight:700;color:var(--dim);}
+.kbtn.sym:hover{color:var(--white);}
+.pin-err{color:var(--red);font-size:12px;font-weight:700;margin-top:8px;min-height:16px;}
+
+/* ── USER BAR ── */
+.user-bar{display:flex;align-items:center;gap:12px;background:rgba(0,0,0,.4);border-bottom:1px solid rgba(247,201,72,.15);padding:10px 16px;}
+.ub-info{display:flex;align-items:center;gap:10px;flex:1;}
+.ub-name{font-family:'Teko';font-weight:600;font-size:17px;letter-spacing:.5px;color:var(--white);}
+.ub-sub{font-size:11px;color:var(--dim);font-weight:700;}
+.logout-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--dim);font-size:12px;font-weight:700;padding:5px 12px;cursor:pointer;transition:all .18s;}
+.logout-btn:hover{color:var(--white);border-color:rgba(255,255,255,.25);}
+
+/* ── MAIN NAV ── */
+.main-nav{display:flex;background:rgba(0,0,0,.5);border-bottom:2px solid rgba(255,255,255,.05);overflow-x:auto;scrollbar-width:none;}
+.main-nav::-webkit-scrollbar{display:none;}
+.nav-btn{flex:0 0 auto;padding:13px 22px;background:none;border:none;color:var(--dim);font-family:'Teko';font-weight:600;font-size:14px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;}
+.nav-btn:hover{color:var(--text);}
+.nav-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+
+/* ── CONTENT ── */
+.content{max-width:900px;margin:0 auto;padding:18px 14px 40px;}
+.inner-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+.itab{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:6px 14px;font-family:'Teko';font-weight:600;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--dim);cursor:pointer;transition:all .15s;}
+.itab:hover{color:var(--text);}
+.itab.active{background:rgba(247,201,72,.12);border-color:rgba(247,201,72,.4);color:var(--gold);}
+.date-divider{font-family:'Teko';font-size:12px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--dim);padding:14px 0 6px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:8px;}
+
+/* ── MATCH CARD ── */
+.match-card{margin-bottom:5px;}
+.match-card .match-row{
+  display:grid;grid-template-columns:88px 1fr auto 1fr 100px;
+  align-items:stretch;
+  background:var(--surface);border:1px solid rgba(255,255,255,.08);
+  border-radius:10px 10px 0 0;overflow:hidden;transition:border-color .15s;min-height:52px;
+  border-bottom:none;backdrop-filter:blur(4px);
+}
+.match-card:not(:has(.result-strip)):not(:has(.others-toggle)) .match-row{border-radius:10px;border-bottom:1px solid rgba(255,255,255,.08);}
+.match-card.has-tip .match-row{border-left:3px solid rgba(45,198,83,.45);}
+.match-card.locked .match-row{opacity:.7;}
+.match-card .match-row:hover{border-color:rgba(255,255,255,.16);}
+/* standalone row */
+.match-row{display:grid;grid-template-columns:88px 1fr auto 1fr 100px;align-items:stretch;background:var(--surface);border:1px solid rgba(255,255,255,.08);border-radius:10px;overflow:hidden;min-height:52px;backdrop-filter:blur(4px);}
+
+/* time */
+.mr-time{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 8px;border-right:1px solid rgba(255,255,255,.06);text-align:center;gap:2px;background:rgba(0,0,0,.2);}
+.mr-date{font-size:10px;color:var(--dim);font-weight:700;}
+.mr-clock{font-family:'Teko';font-weight:600;font-size:15px;letter-spacing:.3px;color:var(--text);}
+.mr-lock{font-size:9px;font-weight:700;letter-spacing:.8px;}
+.mr-lock.open{color:var(--green);}
+.mr-lock.closed{color:var(--red);}
+
+/* teams */
+.mr-home{display:flex;align-items:center;gap:7px;padding:0 10px;justify-content:flex-end;}
+.mr-away{display:flex;align-items:center;gap:7px;padding:0 10px;}
+.t-flag{font-size:18px;line-height:1;flex-shrink:0;}
+.t-name{font-family:'Teko';font-weight:600;font-size:14px;line-height:1.1;letter-spacing:.3px;color:var(--white);}
+.t-name.right{text-align:right;}
+
+/* score */
+.mr-score{display:flex;align-items:center;gap:4px;padding:4px 8px;border-left:1px solid rgba(255,255,255,.06);border-right:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.25);}
+.score-in{width:36px;height:34px;background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.12);border-radius:6px;color:var(--white);font-family:'Teko';font-weight:700;font-size:22px;text-align:center;padding:0;outline:none;-moz-appearance:textfield;transition:border-color .15s;}
+.score-in::-webkit-inner-spin-button,.score-in::-webkit-outer-spin-button{-webkit-appearance:none;}
+.score-in:focus{border-color:var(--gold);background:rgba(247,201,72,.08);}
+.score-in:disabled{opacity:.35;cursor:not-allowed;}
+.score-sep{font-family:'Teko';font-size:18px;color:var(--dim);font-weight:700;}
+.score-static{font-family:'Teko';font-size:22px;color:var(--gold);min-width:36px;text-align:center;font-weight:700;}
+.mr-result{display:flex;align-items:center;gap:3px;padding:4px 10px;border-left:1px solid rgba(255,255,255,.06);border-right:1px solid rgba(255,255,255,.06);background:rgba(247,201,72,.05);}
+.res-num{font-family:'Teko';font-size:24px;color:var(--gold);font-weight:700;}
+.res-sep{font-family:'Teko';font-size:18px;color:var(--dim);}
+
+/* action */
+.mr-action{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5px 8px;gap:3px;border-left:1px solid rgba(255,255,255,.06);}
+.save-btn{background:var(--gold);color:#000;border:none;border-radius:6px;padding:5px 10px;font-family:'Teko';font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.save-btn:hover{background:var(--gold2);box-shadow:0 4px 12px rgba(247,201,72,.3);}
+.tip-ok{font-size:10px;color:var(--green);font-weight:700;}
+.pts-pill{font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px;white-space:nowrap;}
+.pts-exact{background:rgba(247,201,72,.2);color:var(--gold);}
+.pts-win{background:rgba(45,198,83,.15);color:var(--green);}
+.pts-zero{background:rgba(255,255,255,.06);color:var(--dim);}
+.del-btn{background:rgba(230,57,70,.15);border:1px solid rgba(230,57,70,.3);border-radius:6px;color:var(--red);font-size:12px;font-weight:700;padding:3px 7px;cursor:pointer;transition:all .15s;}
+.del-btn:hover{background:rgba(230,57,70,.3);}
+.del-tip-btn{background:none;border:none;color:var(--dim);font-size:11px;font-weight:700;cursor:pointer;padding:2px 4px;transition:color .15s;}
+.del-tip-btn:hover{color:var(--red);}
+
+/* result strip */
+.result-strip{
+  padding:5px 14px 7px;display:flex;align-items:center;gap:8px;
+  font-size:12px;color:var(--dim);font-weight:700;
+  border:1px solid rgba(255,255,255,.08);border-top:none;border-radius:0 0 10px 10px;
+  background:rgba(0,0,0,.25);backdrop-filter:blur(4px);
+}
+.result-strip .rs-score{font-family:'Teko';font-size:17px;color:var(--gold);font-weight:700;}
+
+@media(max-width:580px){
+  .match-card .match-row,.match-row{grid-template-columns:68px 1fr auto 1fr 82px;}
+  .t-name{font-size:12px;}.t-flag{font-size:15px;}
+  .score-in,.score-static{width:30px;height:30px;font-size:18px;}
+  .mr-home,.mr-away{padding:0 6px;gap:4px;}.mr-time{padding:0 5px;}
+  .save-btn{font-size:10px;padding:4px 7px;}
+}
+
+/* ── CHAMPION ── */
+.champ-block{
+  background:linear-gradient(135deg,rgba(247,201,72,.12) 0%,rgba(247,201,72,.04) 100%);
+  border:2px solid rgba(247,201,72,.3);border-radius:14px;
+  padding:18px 20px;margin-bottom:20px;
+  box-shadow:0 0 30px rgba(247,201,72,.05);
+  backdrop-filter:blur(8px);
+}
+.champ-title{font-family:'Black Han Sans';font-size:20px;letter-spacing:2px;color:var(--gold);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.champ-sub{font-size:12px;color:var(--dim);margin-bottom:14px;font-weight:700;}
+.champ-select{width:100%;background:rgba(0,0,0,.4);border:2px solid rgba(247,201,72,.25);border-radius:10px;color:var(--white);padding:11px 14px;font-family:'Nunito';font-weight:700;font-size:15px;outline:none;cursor:pointer;transition:border-color .2s;}
+.champ-select:focus{border-color:var(--gold);}
+.champ-save{margin-top:10px;width:100%;background:var(--gold);color:#000;border:none;border-radius:10px;padding:11px;font-family:'Teko';font-weight:700;font-size:16px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .2s;}
+.champ-save:hover{background:var(--gold2);box-shadow:0 6px 20px rgba(247,201,72,.3);}
+.champ-saved{margin-top:10px;padding:10px 14px;background:rgba(45,198,83,.1);border:1px solid rgba(45,198,83,.3);border-radius:8px;font-size:13px;font-weight:700;color:var(--green);display:flex;align-items:center;gap:6px;}
+
+/* ── LEADERBOARD ── */
+.lb-table{display:flex;flex-direction:column;gap:8px;}
+.lb-row{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px 18px;transition:all .15s;backdrop-filter:blur(4px);}
+.lb-row:hover{border-color:rgba(255,255,255,.16);box-shadow:0 4px 16px rgba(0,0,0,.3);}
+.lb-rank{font-family:'Black Han Sans';font-size:26px;width:32px;text-align:center;color:var(--dim);}
+.lb-rank.g{color:var(--gold);text-shadow:0 0 12px rgba(247,201,72,.4);}
+.lb-rank.s{color:#c0c8d0;}
+.lb-rank.b{color:#cd7f32;}
+.lb-info{flex:1;}
+.lb-name{font-family:'Teko';font-weight:700;font-size:22px;letter-spacing:.5px;color:var(--white);}
+.lb-detail{font-size:11px;color:var(--dim);margin-top:2px;font-weight:700;}
+.lb-pts{font-family:'Black Han Sans';font-size:32px;color:var(--gold);line-height:1;}
+.lb-ptslabel{font-size:11px;color:var(--dim);font-weight:700;text-align:right;}
+
+/* ── SECTION HEADER ── */
+.sh{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.sh-title{font-family:'Black Han Sans';font-size:26px;letter-spacing:2px;color:var(--text);}
+.sh-count{background:rgba(247,201,72,.12);border:1px solid rgba(247,201,72,.25);color:var(--gold);font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;}
+
+/* ── ADMIN ── */
+.admin-card{background:var(--surface);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;margin-bottom:18px;backdrop-filter:blur(4px);}
+.admin-title{font-family:'Black Han Sans';font-size:18px;letter-spacing:2px;color:var(--gold);margin-bottom:12px;border-bottom:1px solid rgba(247,201,72,.15);padding-bottom:10px;}
+.admin-row{display:grid;grid-template-columns:1fr 38px auto 38px 1fr auto auto;align-items:center;gap:6px;margin-bottom:8px;}
+.res-team{font-family:'Teko';font-weight:600;font-size:13px;color:var(--text);}
+.res-team.right{text-align:right;}
+.res-input{width:38px;height:32px;background:rgba(0,0,0,.3);border:2px solid rgba(255,255,255,.12);border-radius:6px;color:var(--white);font-family:'Teko';font-size:20px;font-weight:700;text-align:center;outline:none;-moz-appearance:textfield;}
+.res-input::-webkit-inner-spin-button,.res-input::-webkit-outer-spin-button{-webkit-appearance:none;}
+.res-input:focus{border-color:var(--gold);}
+.res-btn{background:var(--green);color:#000;border:none;border-radius:6px;padding:5px 10px;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;}
+.res-btn:hover{background:#25b04a;}
+.po-select{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:var(--white);padding:7px 8px;font-family:'Nunito';font-size:13px;font-weight:700;outline:none;width:100%;}
+.po-row{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-bottom:10px;}
+.po-label{font-family:'Teko';font-weight:600;font-size:14px;color:var(--gold);margin-bottom:5px;}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:60px 20px;color:var(--dim);}
+.empty-txt{font-size:14px;line-height:1.6;font-weight:700;}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--gold);color:#000;font-family:'Teko';font-weight:700;font-size:15px;letter-spacing:1px;padding:10px 24px;border-radius:8px;transition:transform .28s ease;z-index:9999;white-space:nowrap;pointer-events:none;box-shadow:0 8px 24px rgba(247,201,72,.4);}
+#toast.show{transform:translateX(-50%) translateY(0);}
+.save-all-wrap{position:sticky;bottom:16px;z-index:100;display:flex;justify-content:center;margin-top:16px;}
+.save-all-btn{background:var(--gold);color:#000;border:none;border-radius:100px;padding:14px 36px;font-family:'Black Han Sans',sans-serif;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.5);letter-spacing:.5px;}
+.urgency-banner{
+  margin-bottom:16px;
+  background:linear-gradient(135deg,rgba(255,160,0,.14),rgba(255,100,0,.06));
+  border:1px solid rgba(255,160,0,.4);border-radius:14px;
+  padding:14px 16px;display:flex;align-items:flex-start;gap:12px;
+  animation:bannerIn .5s cubic-bezier(.34,1.2,.64,1);
+}
+@keyframes bannerIn{0%{opacity:0;transform:translateY(-12px);}100%{opacity:1;transform:none;}}
+.ub-icon{font-size:22px;flex-shrink:0;animation:ubPulse 1.2s ease-in-out infinite alternate;}
+@keyframes ubPulse{0%{transform:scale(1);}100%{transform:scale(1.2);}}
+.ub-body{flex:1;}
+.ub-title{font-family:Anton,sans-serif;font-size:13px;color:#ffaa00;margin-bottom:6px;letter-spacing:.5px;}
+.ub-matches{display:flex;flex-direction:column;gap:5px;}
+.ub-match{font-size:12px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:7px;}
+.ub-time{background:rgba(255,160,0,.2);color:#ffaa00;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;font-family:Anton,sans-serif;}
+.ub-time.urgent{background:rgba(255,71,87,.25);color:#ff4757;animation:timePulse .8s ease-in-out infinite alternate;}
+@keyframes timePulse{0%{opacity:1;}100%{opacity:.5;}}
+.team-sel{background:#0d1520;border:1px solid rgba(255,255,255,.15);border-radius:7px;color:#fff;font-size:11px;font-weight:600;padding:4px 6px;width:100%;margin-bottom:4px;cursor:pointer;outline:none;}
+.team-sel:focus{border-color:#f7c948;}
+.ko-team-wrap{display:flex;flex-direction:column;align-items:center;padding:4px 6px;justify-content:center;}
+.others-strip{padding:8px 12px;background:rgba(0,0,0,.2);border-top:1px solid rgba(255,255,255,.06);display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.oth-label{font-size:9px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,.25);text-transform:uppercase;width:100%;margin-bottom:2px;}
+.oth-tip{font-size:11px;font-weight:600;background:rgba(255,255,255,.05);border-radius:6px;padding:3px 8px;display:flex;align-items:center;gap:4px;}
+.oth-tip.exact{background:rgba(247,201,72,.12);color:#f7c948;}
+.oth-tip.win{background:rgba(62,207,142,.1);color:#3ecf8e;}
+.oth-tip.miss{color:rgba(255,255,255,.3);}
+.oth-name{font-size:10px;color:rgba(255,255,255,.4);}
+.gt-wrap{padding:16px 14px 80px;}
+.gt-grp{margin-bottom:24px;}
+.gt-grp-title{font-family:Anton,sans-serif;font-size:15px;letter-spacing:1px;color:var(--gold);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08);}
+.gt-table{width:100%;border-collapse:collapse;font-size:12px;}
+.gt-table th{text-align:center;color:var(--dim);font-weight:700;font-size:10px;letter-spacing:1px;padding:4px 6px;border-bottom:1px solid rgba(255,255,255,.08);}
+.gt-table th:first-child{text-align:left;}
+.gt-table td{padding:7px 6px;border-bottom:1px solid rgba(255,255,255,.04);text-align:center;color:var(--text);}
+.gt-table td:first-child{text-align:left;display:flex;align-items:center;gap:6px;}
+.gt-table tr:last-child td{border-bottom:none;}
+.gt-table tr.qualified td{background:rgba(62,207,142,.05);}
+.gt-table tr.qualified td:first-child{border-left:2px solid var(--accent);}
+.gt-rank{font-family:Anton,sans-serif;font-size:13px;color:var(--dim);width:16px;flex-shrink:0;}
+.gt-flag{font-size:16px;flex-shrink:0;}
+.gt-name{font-family:Anton,sans-serif;font-size:12px;color:var(--text);letter-spacing:.3px;}
+.gt-pts{font-family:Anton,sans-serif;font-size:14px;color:var(--gold);}
+.gt-sel{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.gt-sel-btn{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-family:Anton,sans-serif;font-size:11px;letter-spacing:.5px;color:var(--dim);cursor:pointer;transition:all .15s;}
+.gt-sel-btn.active{background:rgba(62,207,142,.12);border-color:rgba(62,207,142,.3);color:var(--accent);}
+#nav-admin{display:none;}
+
+/* WOW EFFECTS */
+#wow-canvas{position:fixed;inset:0;pointer-events:none;z-index:990;}
+
+/* PŘESNĚ overlay */
+.presne-overlay{
+  position:fixed;inset:0;z-index:995;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;opacity:0;
+}
+.presne-overlay.show{
+  pointer-events:all;
+  animation:presneIn .7s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+.presne-overlay.hide{animation:presneOut .4s ease-in forwards;}
+@keyframes presneIn{0%{opacity:0;transform:scale(.2);}60%{opacity:1;transform:scale(1.06);}100%{opacity:1;transform:scale(1);}}
+@keyframes presneOut{0%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(1.3);}}
+
+.presne-card{
+  background:linear-gradient(135deg,rgba(0,20,10,.95),rgba(0,30,15,.98));
+  border:2px solid #f0c820;
+  border-radius:24px;padding:36px 52px;text-align:center;
+  box-shadow:0 0 0 8px rgba(0,229,160,.06),0 0 80px rgba(0,229,160,.2),0 24px 60px rgba(0,0,0,.9);
+  position:relative;overflow:hidden;
+}
+.presne-rays{
+  position:absolute;inset:-50%;pointer-events:none;
+  background:conic-gradient(from 0deg,transparent 0%,rgba(0,229,160,.04) 10%,transparent 20%,rgba(0,229,160,.04) 30%,transparent 40%,rgba(0,229,160,.04) 50%,transparent 60%,rgba(0,229,160,.04) 70%,transparent 80%,rgba(0,229,160,.04) 90%,transparent 100%);
+  animation:raysRot 8s linear infinite;
+}
+@keyframes raysRot{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+.presne-emoji{font-size:60px;display:block;margin-bottom:12px;animation:emojiFloat .5s ease-in-out infinite alternate;}
+@keyframes emojiFloat{0%{transform:translateY(0);}100%{transform:translateY(-8px);}}
+.presne-title{
+  font-family:Anton,sans-serif;font-size:48px;font-weight:800;
+  background:linear-gradient(135deg,#00e5a0,#00ff88);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 20px rgba(0,229,160,.5));
+  letter-spacing:-1px;
+}
+.presne-sub{font-size:13px;color:rgba(255,255,255,.4);margin-top:6px;font-weight:600;}
+.presne-pts{font-family:Anton,sans-serif;font-size:32px;color:#f5c842;margin-top:10px;text-shadow:0 0 20px rgba(245,200,66,.5);}
+.presne-match{font-size:12px;color:rgba(255,255,255,.3);margin-top:6px;}
+.presne-tap{font-size:11px;color:rgba(255,255,255,.2);margin-top:16px;letter-spacing:1px;}
+
+/* Leader toast */
+.leader-toast{
+  position:fixed;top:-120px;left:50%;transform:translateX(-50%);
+  z-index:994;pointer-events:none;
+  background:linear-gradient(135deg,#1a1200,#2a1e00);
+  border:2px solid rgba(245,200,66,.5);
+  border-radius:16px;padding:14px 24px;
+  display:flex;align-items:center;gap:12px;
+  box-shadow:0 8px 32px rgba(0,0,0,.7),0 0 40px rgba(245,200,66,.15);
+  transition:top .5s cubic-bezier(.34,1.56,.64,1);
+  white-space:nowrap;
+}
+.leader-toast.show{top:20px;}
+.lt-crown{font-size:28px;animation:crownBounce .5s ease-in-out infinite alternate;}
+@keyframes crownBounce{0%{transform:translateY(0) rotate(-5deg);}100%{transform:translateY(-5px) rotate(5deg);}}
+.lt-body{display:flex;flex-direction:column;gap:2px;}
+.lt-label{font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.3);text-transform:uppercase;}
+.lt-name{font-family:Anton,sans-serif;font-size:18px;color:#f5c842;font-weight:700;}
+
+/* Fire streak */
+.fire-badge{display:inline-block;animation:fireDance .35s ease-in-out infinite alternate;filter:drop-shadow(0 0 4px rgba(255,140,0,.8));}
+@keyframes fireDance{0%{transform:scale(1) rotate(-4deg);}100%{transform:scale(1.12) rotate(4deg);}}
+.streak-badge{
+  font-size:10px;font-weight:700;
+  color:#ff8c00;background:rgba(255,140,0,.12);
+  border:1px solid rgba(255,140,0,.25);border-radius:20px;
+  padding:1px 6px;margin-left:3px;vertical-align:middle;
+  font-family:Anton,sans-serif;
+}
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-pitch">
+    <div class="header-badge">Tipovačka</div>
+    <h1>MS Fotbal<br>2026</h1>
+    <div class="header-sub">USA &amp; Kanada &amp; Mexiko · 11. 6. – 19. 7. 2026</div>
+    <div class="header-flags">🇺🇸🇨🇦🇲🇽🇧🇷🇦🇷🇫🇷🇪🇸🇩🇪🇵🇹🇬🇧🏴󠁧󠁢󠁥󠁮󠁧󠁿🇳🇱🇨🇿</div>
+  </div>
+</div>
+
+<div class="scoring-bar">
+  <div class="sc-item"><b>20</b> Přesný výsledek</div>
+  <div class="sc-item"><b>10</b> Správný vítěz</div>
+  <div class="sc-item"><b>5</b> Celkový počet gólů</div>
+  <div class="sc-item" style="color:var(--gold)"><b>50</b> Vítěz šampionátu ⚽</div>
+</div>
+
+<div id="login-screen">
+  <div class="login-h">Kdo tipuje?</div>
+  <div class="login-sub">Vyber se a zadej PIN</div>
+  <div class="player-grid" id="player-grid"></div>
+</div>
+
+<div class="pin-overlay" id="pin-overlay" style="display:none">
+  <div class="pin-box">
+    <div class="pin-who">
+      <div class="avatar-wrap" id="po-avatar" style="width:48px;height:48px;"></div>
+      <div class="pin-who-name" id="po-name"></div>
+    </div>
+    <div class="pin-label" id="po-label">Zadej PIN</div>
+    <div class="pin-note" id="po-note" style="display:none"></div>
+    <div class="pin-dots" id="po-dots"></div>
+    <div class="keypad" id="po-keypad"></div>
+    <div class="pin-err" id="po-err"></div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <div class="user-bar">
+    <div class="ub-info">
+      <div class="avatar-wrap" id="ub-avatar" style="width:34px;height:34px;"></div>
+      <div>
+        <div class="ub-name" id="ub-name"></div>
+        <div class="ub-sub">Přihlášen jako tipér</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="logout()">Odhlásit</button>
+  </div>
+  <div class="main-nav">
+    <button class="nav-btn active" onclick="switchTab('tipovat')">Tipovat</button>
+    <button class="nav-btn" onclick="switchTab('leaderboard')">Tabulka</button>
+    <button class="nav-btn" onclick="switchTab('moje')">Moje tipy</button>
+    <button class="nav-btn" onclick="switchTab('odehrane')">Odehrane</button>
+    <button class="nav-btn" onclick="switchTab('skuptab')">Tabulky</button>
+    <button class="nav-btn" id="nav-admin" onclick="switchTab('admin')">Admin</button>
+  </div>
+  <div id="tab-tipovat" class="content"></div>
+  <div id="tab-leaderboard" class="content" style="display:none"></div>
+  <div id="tab-moje" class="content" style="display:none"></div>
+  <div id="tab-skuptab" class="content" style="display:none"></div>
+  <div id="tab-odehrane" class="content" style="display:none"></div>
+  <div id="tab-admin" class="content" style="display:none"></div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+// ── FIREBASE ──────────────────────────────────────────────
+var db=null;
+try{
+  firebase.initializeApp({
+    apiKey:"AIzaSyAoKHb1KYrYZNBkCKUZLqpoPQzMPXYkVxI",
+    authDomain:"hokej-tipovacka.firebaseapp.com",
+    projectId:"hokej-tipovacka",
+    storageBucket:"hokej-tipovacka.firebasestorage.app",
+    messagingSenderId:"739328848734",
+    appId:"1:739328848734:web:d482e143d7ec5e3be155cf"
+  });
+  db=firebase.firestore();
+  db.enablePersistence({synchronizeTabs:true}).catch(function(){});
+}catch(e){console.warn('Firebase:',e);}
+
+// ── STORAGE ──────────────────────────────────────────────
+// Use 'fotbal_' prefix to avoid collision with hockey app
+var S={
+  g:function(k){try{return JSON.parse(localStorage.getItem('fotbal_'+k))}catch(e){return null}},
+  s:function(k,v){localStorage.setItem('fotbal_'+k,JSON.stringify(v))},
+  d:function(k){localStorage.removeItem('fotbal_'+k)}
+};
+function getPin(id){return S.g('pin_'+id)}
+function setPin(id,p){S.s('pin_'+id,p)}
+function getTip(uid,mid){return S.g('tip_'+uid+'_'+mid)}
+function saveTipLS(uid,mid,h,a){
+  S.s('tip_'+uid+'_'+mid,{home:h,away:a});
+  if(db) db.collection('fotbal_tips').doc(uid).collection('matches').doc(mid).set({home:h,away:a,ts:Date.now()}).catch(function(){});
+}
+function deleteTipLS(uid,mid){
+  S.d('tip_'+uid+'_'+mid);
+  if(db) db.collection('fotbal_tips').doc(uid).collection('matches').doc(mid).delete().catch(function(){});
+}
+function getResult(mid){return S.g('result_'+mid)}
+function saveResultLS(mid,h,a){
+  S.s('result_'+mid,{home:h,away:a});
+  if(db) db.collection('fotbal_results').doc(mid).set({home:h,away:a}).catch(function(){});
+}
+function deleteResultLS(mid){
+  S.d('result_'+mid);
+  if(db) db.collection('fotbal_results').doc(mid).delete().catch(function(){});
+}
+function getPoT(){return S.g('po_teams')||{}}
+function savePoT(v){S.s('po_teams',v);if(db) db.collection('fotbal_config').doc('playoff_teams').set(v).catch(function(){});}
+function getChampTip(uid){return S.g('champ_tip_'+uid)}
+function saveChampTipLS(uid,t){S.s('champ_tip_'+uid,t);if(db) db.collection('fotbal_champ_tips').doc(uid).set({team:t,ts:Date.now()}).catch(function(){});}
+function getChampResult(){return S.g('champ_result')}
+function saveChampResultLS(t){S.s('champ_result',t);if(db) db.collection('fotbal_config').doc('champ_result').set({team:t}).catch(function(){});}
+
+// ── FIREBASE SYNC ─────────────────────────────────────────
+function startSync(){
+  if(!db) return;
+  var uids=['terka','martin','vojta','evelina','ola','dan','radim','petr','martink'];
+  uids.forEach(function(uid){
+    db.collection('fotbal_tips').doc(uid).collection('matches').onSnapshot(function(snap){
+      snap.forEach(function(doc){S.s('tip_'+uid+'_'+doc.id,doc.data());});
+      snap.docChanges().forEach(function(ch){if(ch.type==='removed')S.d('tip_'+uid+'_'+ch.doc.id);});
+      refreshView();
+    },function(){});
+  });
+  db.collection('fotbal_results').onSnapshot(function(snap){
+    snap.forEach(function(doc){S.s('result_'+doc.id,doc.data());});
+    snap.docChanges().forEach(function(ch){if(ch.type==='removed')S.d('result_'+ch.doc.id);});
+    refreshView();
+  },function(){});
+  db.collection('fotbal_config').doc('playoff_teams').onSnapshot(function(snap){if(snap.exists)S.s('po_teams',snap.data());refreshView();},function(){});
+  uids.forEach(function(uid){
+    db.collection('fotbal_champ_tips').doc(uid).onSnapshot(function(snap){
+      if(snap.exists)S.s('champ_tip_'+uid,snap.data().team);else S.d('champ_tip_'+uid);refreshView();
+    },function(){});
+  });
+  db.collection('fotbal_config').doc('champ_result').onSnapshot(function(snap){
+    if(snap.exists)S.s('champ_result',snap.data().team);else S.d('champ_result');refreshView();
+  },function(){});
+}
+function saveAll(){
+  if(!currentUser)return;
+  var saved=0;
+  document.querySelectorAll('input[id^="h_"]').forEach(function(hEl){
+    if(hEl.disabled)return;
+    var mid=hEl.id.slice(2);
+    var aEl=document.getElementById('a_'+mid);
+    if(!aEl)return;
+    var h=parseInt(hEl.value),a=parseInt(aEl.value);
+    if(isNaN(h)||isNaN(a)||h<0||a<0)return;
+    saveTipLS(currentUser.id,mid,h,a);
+    saved++;
+  });
+  if(saved>0)showToast('Uloženo: '+saved+(saved===1?' tip':saved<5?' tipy':' tipů')+'!');
+  else showToast('Žádné tipy k uložení');
+}
+
+var wowCanvas=document.getElementById('wow-canvas');
+var wowCtx=wowCanvas?wowCanvas.getContext('2d'):null;
+var confettiPieces=[]; var confettiActive=false;
+function resizeWow(){if(wowCanvas){wowCanvas.width=window.innerWidth;wowCanvas.height=window.innerHeight;}}
+resizeWow(); window.addEventListener('resize',resizeWow);
+var CONF_COLORS=['#f0c820','#00e5a0','#ff4757','#60a5fa','#a855f7','#fb923c','#ec4899','#10b981','#fff'];
+function spawnConfetti(n){
+  for(var i=0;i<n;i++){
+    var shapes=['rect','circle','tri'];
+    confettiPieces.push({x:Math.random()*(wowCanvas?wowCanvas.width:300),y:-20-Math.random()*200,vx:(Math.random()-.5)*6,vy:Math.random()*4+3,rot:Math.random()*360,rotS:(Math.random()-.5)*8,size:Math.random()*10+6,color:CONF_COLORS[Math.floor(Math.random()*CONF_COLORS.length)],shape:shapes[Math.floor(Math.random()*shapes.length)],alpha:1,grav:.12,wob:Math.random()*Math.PI*2,wobS:Math.random()*.1+.05});
+  }
+}
+function confettiLoop(){
+  if(!wowCtx)return;
+  wowCtx.clearRect(0,0,wowCanvas.width,wowCanvas.height);
+  var alive=[];
+  for(var i=0;i<confettiPieces.length;i++){
+    var p=confettiPieces[i];
+    p.vy+=p.grav;p.x+=p.vx+Math.sin(p.wob)*1.5;p.y+=p.vy;p.rot+=p.rotS;p.wob+=p.wobS;
+    if(p.y>wowCanvas.height+20)p.alpha-=.05;
+    if(p.alpha>.01){
+      wowCtx.save();wowCtx.globalAlpha=p.alpha;wowCtx.fillStyle=p.color;
+      wowCtx.translate(p.x,p.y);wowCtx.rotate(p.rot*Math.PI/180);
+      if(p.shape==='rect')wowCtx.fillRect(-p.size/2,-p.size/4,p.size,p.size/2);
+      else if(p.shape==='circle'){wowCtx.beginPath();wowCtx.arc(0,0,p.size/2,0,Math.PI*2);wowCtx.fill();}
+      else{wowCtx.beginPath();wowCtx.moveTo(0,-p.size/2);wowCtx.lineTo(p.size/2,p.size/2);wowCtx.lineTo(-p.size/2,p.size/2);wowCtx.closePath();wowCtx.fill();}
+      wowCtx.restore();alive.push(p);
+    }
+  }
+  confettiPieces=alive;
+  if(alive.length>0||confettiActive)requestAnimationFrame(confettiLoop);
+  else if(wowCtx)wowCtx.clearRect(0,0,wowCanvas.width,wowCanvas.height);
+}
+function launchConfetti(){
+  confettiActive=true;spawnConfetti(150);
+  setTimeout(function(){spawnConfetti(100);},200);
+  setTimeout(function(){spawnConfetti(80);confettiActive=false;},500);
+  confettiLoop();
+}
+var presneTimer=null
+function showPresne(matchLabel){
+  var el=document.getElementById('presneOverlay');if(!el)return;
+  var ml=document.getElementById('presne-match');if(ml&&matchLabel)ml.textContent=matchLabel;
+  el.className='presne-overlay show';el.style.pointerEvents='all';
+  launchConfetti();el.onclick=dismissPresne;
+  if(presneTimer)clearTimeout(presneTimer);
+  presneTimer=setTimeout(dismissPresne,4000);
+}
+function checkLeaderChange(){
+  var ranked=[];
+  for(var i=0;i<PLAYERS.length;i++){var sc=playerScore(PLAYERS[i].id);ranked.push({p:PLAYERS[i],sc:sc});}
+  ranked.sort(function(a,b){return b.sc.total-a.sc.total;});
+  if(!ranked.length||ranked[0].sc.total===0)return;
+  var newLeader=ranked[0].p.id;
+  var oldLeader=S.g('last_leader');
+  if(oldLeader&&oldLeader!==newLeader){
+    S.s('last_leader',newLeader);
+    (function(name){setTimeout(function(){showLeaderToast(name);},1200);})(ranked[0].p.name);
+  }else if(!oldLeader){S.s('last_leader',newLeader);}
+}
+
+// ── SNIDANOVY KRAL ───────────────────────────────────────
+var skBgC2,skBgX2,skCcC2,skCcX2,skFlC2,skFlX2,skPieces=[],skConfActive=false,skStars2=[];
+var SK_FOOD=['🥚','🥓','🍳','🍞','☕','🧃','🥞','🧈','🫒','🥐'];
+
+function showLeaderToast(name){
+  var ln=document.getElementById('leaderName');if(ln)ln.textContent=name;
+  var t=document.getElementById('leaderToast');if(!t)return;
+  t.classList.add('show');
+  if(leaderTimer)clearTimeout(leaderTimer);
+  leaderTimer=setTimeout(function(){t.classList.remove('show');},4000);
+}
+
+function refreshView(){
+  if(!currentUser)return;
+  var a=document.querySelector('.nav-btn.active');if(!a)return;
+  var n=a.textContent.trim().toLowerCase();
+  if(n==='tipovat') renderMatchList();
+  else if(n==='tabulka')renderLeaderboard();
+  else if(n==='moje tipy')renderMoje();
+  else if(n==='odehrane')renderOdehrane();
+  else if(n==='tabulky')renderSkupTab();
+}
+
+// ── PLAYERS & AVATARS ─────────────────────────────────────
+var PLAYERS=[
+  {id:'terka',name:'Terka',gender:'f'},
+  {id:'martin',name:'Martin',gender:'m'},
+  {id:'vojta',name:'Vojta',gender:'m'},
+  {id:'evelina',name:'Evelina',gender:'f'},
+  {id:'ola',name:'Ola',gender:'f'},
+  {id:'dan',name:'Dan',gender:'m'},
+  {id:'radim',name:'Radim',gender:'m'},
+  {id:'petr',name:'Petr',gender:'m'},
+  {id:'martink',name:'Martin K.',gender:'m'}
+];
+var ADMIN_PIN='1111';
+var PCOLORS={
+  terka:['#1a3a1a','#f4c49a','#8b3a1a'],martin:['#1a2e1a','#e8b882','#2a1a0a'],
+  vojta:['#1a1a2a','#f0c898','#1a1a1a'],evelina:['#2a1020','#f4c49a','#7a2060'],
+  ola:['#1a1a10','#c8986a','#3a2010'],dan:['#0f1e20','#e8b882','#101010'],
+  radim:['#1a1010','#f0c898','#7a3010'],petr:['#0f1818','#f4c49a','#202020']
+};
+function makeAvatar(id,gender){
+  var c=PCOLORS[id]||['#1a3a1a','#f0c880','#2a1a0a'];
+  var bg=c[0],skin=c[1],hair=c[2],isF=(gender==='f');
+  var eyeY=isF?21.5:22.5,shY=isF?20.9:21.9,mY1=isF?28.5:29.5,mY2=isF?31.5:32.5,bY=isF?33:34;
+  var hp=isF
+    ?'<ellipse cx="26" cy="22" rx="13" ry="13.5" fill="'+hair+'"/><rect x="12" y="22" width="4" height="14" rx="2" fill="'+hair+'"/><rect x="36" y="22" width="4" height="14" rx="2" fill="'+hair+'"/><ellipse cx="26" cy="22" rx="11.5" ry="12" fill="'+skin+'"/>'
+    :'<ellipse cx="26" cy="23" rx="12" ry="12.5" fill="'+skin+'"/><ellipse cx="26" cy="13.5" rx="12" ry="5" fill="'+hair+'"/><rect x="14" y="12" width="24" height="7" fill="'+hair+'"/>';
+  return '<svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">'
+    +'<rect width="52" height="52" rx="26" fill="'+bg+'"/>'+hp
+    +'<circle cx="21.5" cy="'+eyeY+'" r="1.5" fill="#1a0a00"/><circle cx="30.5" cy="'+eyeY+'" r="1.5" fill="#1a0a00"/>'
+    +'<circle cx="22.2" cy="'+shY+'" r=".5" fill="rgba(255,255,255,.6)"/><circle cx="31.2" cy="'+shY+'" r=".5" fill="rgba(255,255,255,.6)"/>'
+    +'<path d="M22 '+mY1+' Q26 '+mY2+' 30 '+mY1+'" stroke="#8b4a2a" stroke-width="1.4" fill="none" stroke-linecap="round"/>'
+    +'<rect x="21" y="'+bY+'" width="10" height="6" rx="2" fill="'+skin+'" opacity=".5"/>'
+    +'<ellipse cx="26" cy="50" rx="14" ry="6" fill="'+bg+'" opacity=".8"/></svg>';
+}
+
+// ── TEAMS & MATCHES ───────────────────────────────────────
+// 12 groups, 48 teams
+var GROUPS={
+  A:[{id:'mex',n:'Mexiko',f:'🇲🇽'},{id:'kor',n:'J. Korea',f:'🇰🇷'},{id:'rsa',n:'J. Afrika',f:'🇿🇦'},{id:'cze',n:'Czechia',f:'🇨🇿'}],
+  B:[{id:'can',n:'Kanada',f:'🇨🇦'},{id:'sui',n:'Švýcarsko',f:'🇨🇭'},{id:'qat',n:'Katar',f:'🇶🇦'},{id:'bih',n:'Bosna a Hercegovina',f:'🇧🇦'}],
+  C:[{id:'bra',n:'Brazílie',f:'🇧🇷'},{id:'mar',n:'Maroko',f:'🇲🇦'},{id:'hai',n:'Haiti',f:'🇭🇹'},{id:'sco',n:'Skotsko',f:'🏴󠁧󠁢󠁳󠁣󠁴󠁿'}],
+  D:[{id:'usa',n:'USA',f:'🇺🇸'},{id:'par',n:'Paraguay',f:'🇵🇾'},{id:'aus',n:'Austrálie',f:'🇦🇺'},{id:'tur',n:'Türkiye',f:'🇹🇷'}],
+  E:[{id:'ger',n:'Německo',f:'🇩🇪'},{id:'civ',n:'Pobřeží slonoviny',f:'🇨🇮'},{id:'ecu',n:'Ekvádor',f:'🇪🇨'},{id:'cur',n:'Curaçao',f:'🇨🇼'}],
+  F:[{id:'ned',n:'Nizozemsko',f:'🇳🇱'},{id:'jpn',n:'Japonsko',f:'🇯🇵'},{id:'tun',n:'Tunisko',f:'🇹🇳'},{id:'swe',n:'Švédsko',f:'🇸🇪'}],
+  G:[{id:'bel',n:'Belgie',f:'🇧🇪'},{id:'egy',n:'Egypt',f:'🇪🇬'},{id:'irn',n:'Írán',f:'🇮🇷'},{id:'nzl',n:'Nový Zéland',f:'🇳🇿'}],
+  H:[{id:'esp',n:'Španělsko',f:'🇪🇸'},{id:'sau',n:'S. Arábie',f:'🇸🇦'},{id:'uru',n:'Uruguay',f:'🇺🇾'},{id:'cpv',n:'Kapverdy',f:'🇨🇻'}],
+  I:[{id:'fra',n:'Francie',f:'🇫🇷'},{id:'sen',n:'Senegal',f:'🇸🇳'},{id:'nor',n:'Norsko',f:'🇳🇴'},{id:'irq',n:'Irák',f:'🇮🇶'}],
+  J:[{id:'arg',n:'Argentina',f:'🇦🇷'},{id:'alg',n:'Alžírsko',f:'🇩🇿'},{id:'aut',n:'Rakousko',f:'🇦🇹'},{id:'jor',n:'Jordánsko',f:'🇯🇴'}],
+  K:[{id:'por',n:'Portugalsko',f:'🇵🇹'},{id:'col',n:'Kolumbie',f:'🇨🇴'},{id:'uzb',n:'Uzbekistán',f:'🇺🇿'},{id:'drn',n:'DR Kongo',f:'🇨🇩'}],
+  L:[{id:'eng',n:'Anglie',f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},{id:'cro',n:'Chorvatsko',f:'🇭🇷'},{id:'gha',n:'Ghana',f:'🇬🇭'},{id:'pan',n:'Panama',f:'🇵🇦'}]
+};
+var ALL_TEAMS=[];
+Object.keys(GROUPS).forEach(function(g){GROUPS[g].forEach(function(t){ALL_TEAMS.push(t);});});
+ALL_TEAMS.push({id:'TBD',n:'TBD',f:''});
+function getTeam(id){for(var i=0;i<ALL_TEAMS.length;i++)if(ALL_TEAMS[i].id===id)return ALL_TEAMS[i];return {id:id,n:id,f:''};}
+
+// Generate round-robin matches for each group
+function genGroup(grp,teams,startDate,times){
+  var matches=[];
+  var pairs=[];
+  for(var i=0;i<teams.length;i++) for(var j=i+1;j<teams.length;j++) pairs.push([i,j]);
+  // 6 matches per group, spread over 3 rounds (2 matches per round, 3 days)
+  // round 1: 0-3, 1-2; round 2: 0-1, 2-3; round 3: 0-2, 1-3
+  var rounds=[[[0,3],[1,2]],[[0,1],[2,3]],[[0,2],[1,3]]];
+  var base=new Date(startDate).getTime();
+  rounds.forEach(function(round,ri){
+    var d=new Date(base+ri*86400000*7).toISOString().slice(0,10); // roughly spread
+    round.forEach(function(pair,pi){
+      matches.push({
+        id:grp+'_'+teams[pair[0]].id+'_'+teams[pair[1]].id,
+        group:grp,
+        homeTeam:teams[pair[0]].id,
+        awayTeam:teams[pair[1]].id,
+        date:d,
+        time:times[pi]
+      });
+    });
+  });
+  return matches;
+}
+
+// Group stage matches – using actual dates from schedule
+var GROUP_MATCHES=[
+  // GROUP A
+  {id:'A_mex_rsa',group:'A',homeTeam:'mex',awayTeam:'rsa',date:'2026-06-11',time:'21:00'},
+  {id:'A_kor_cze',group:'A',homeTeam:'kor',awayTeam:'cze',date:'2026-06-12',time:'04:00'},
+  {id:'A_mex_kor',group:'A',homeTeam:'mex',awayTeam:'kor',date:'2026-06-19',time:'03:00'},
+  {id:'A_rsa_cze',group:'A',homeTeam:'rsa',awayTeam:'cze',date:'2026-06-18',time:'18:00'},
+  {id:'A_mex_cze',group:'A',homeTeam:'mex',awayTeam:'cze',date:'2026-06-25',time:'03:00'},
+  {id:'A_rsa_kor',group:'A',homeTeam:'rsa',awayTeam:'kor',date:'2026-06-25',time:'03:00'},
+  // GROUP B
+  {id:'B_can_bih',group:'B',homeTeam:'can',awayTeam:'bih',date:'2026-06-12',time:'21:00'},
+  {id:'B_qat_sui',group:'B',homeTeam:'qat',awayTeam:'sui',date:'2026-06-13',time:'21:00'},
+  {id:'B_can_qat',group:'B',homeTeam:'can',awayTeam:'qat',date:'2026-06-19',time:'00:00'},
+  {id:'B_sui_bih',group:'B',homeTeam:'sui',awayTeam:'bih',date:'2026-06-18',time:'21:00'},
+  {id:'B_sui_can',group:'B',homeTeam:'sui',awayTeam:'can',date:'2026-06-24',time:'21:00'},
+  {id:'B_bih_qat',group:'B',homeTeam:'bih',awayTeam:'qat',date:'2026-06-24',time:'21:00'},
+  // GROUP C
+  {id:'C_bra_mar',group:'C',homeTeam:'bra',awayTeam:'mar',date:'2026-06-14',time:'00:00'},
+  {id:'C_hai_sco',group:'C',homeTeam:'hai',awayTeam:'sco',date:'2026-06-14',time:'03:00'},
+  {id:'C_bra_hai',group:'C',homeTeam:'bra',awayTeam:'hai',date:'2026-06-20',time:'02:30'},
+  {id:'C_sco_mar',group:'C',homeTeam:'sco',awayTeam:'mar',date:'2026-06-20',time:'00:00'},
+  {id:'C_bra_sco',group:'C',homeTeam:'bra',awayTeam:'sco',date:'2026-06-25',time:'00:00'},
+  {id:'C_mar_hai',group:'C',homeTeam:'mar',awayTeam:'hai',date:'2026-06-25',time:'00:00'},
+  // GROUP D
+  {id:'D_usa_par',group:'D',homeTeam:'usa',awayTeam:'par',date:'2026-06-13',time:'03:00'},
+  {id:'D_aus_tur',group:'D',homeTeam:'aus',awayTeam:'tur',date:'2026-06-14',time:'06:00'},
+  {id:'D_usa_aus',group:'D',homeTeam:'usa',awayTeam:'aus',date:'2026-06-19',time:'21:00'},
+  {id:'D_tur_par',group:'D',homeTeam:'tur',awayTeam:'par',date:'2026-06-20',time:'05:00'},
+  {id:'D_tur_usa',group:'D',homeTeam:'tur',awayTeam:'usa',date:'2026-06-26',time:'04:00'},
+  {id:'D_par_aus',group:'D',homeTeam:'par',awayTeam:'aus',date:'2026-06-26',time:'04:00'},
+  // GROUP E
+  {id:'E_ger_cur',group:'E',homeTeam:'ger',awayTeam:'cur',date:'2026-06-14',time:'19:00'},
+  {id:'E_civ_ecu',group:'E',homeTeam:'civ',awayTeam:'ecu',date:'2026-06-15',time:'01:00'},
+  {id:'E_ger_civ',group:'E',homeTeam:'ger',awayTeam:'civ',date:'2026-06-20',time:'22:00'},
+  {id:'E_ecu_cur',group:'E',homeTeam:'ecu',awayTeam:'cur',date:'2026-06-21',time:'02:00'},
+  {id:'E_ecu_ger',group:'E',homeTeam:'ecu',awayTeam:'ger',date:'2026-06-25',time:'22:00'},
+  {id:'E_cur_civ',group:'E',homeTeam:'cur',awayTeam:'civ',date:'2026-06-25',time:'22:00'},
+  // GROUP F
+  {id:'F_ned_jpn',group:'F',homeTeam:'ned',awayTeam:'jpn',date:'2026-06-14',time:'22:00'},
+  {id:'F_swe_tun',group:'F',homeTeam:'swe',awayTeam:'tun',date:'2026-06-15',time:'04:00'},
+  {id:'F_ned_swe',group:'F',homeTeam:'ned',awayTeam:'swe',date:'2026-06-20',time:'19:00'},
+  {id:'F_tun_jpn',group:'F',homeTeam:'tun',awayTeam:'jpn',date:'2026-06-21',time:'06:00'},
+  {id:'F_tun_ned',group:'F',homeTeam:'tun',awayTeam:'ned',date:'2026-06-26',time:'01:00'},
+  {id:'F_jpn_swe',group:'F',homeTeam:'jpn',awayTeam:'swe',date:'2026-06-26',time:'01:00'},
+  // GROUP G
+  {id:'G_bel_egy',group:'G',homeTeam:'bel',awayTeam:'egy',date:'2026-06-15',time:'21:00'},
+  {id:'G_irn_nzl',group:'G',homeTeam:'irn',awayTeam:'nzl',date:'2026-06-16',time:'03:00'},
+  {id:'G_bel_irn',group:'G',homeTeam:'bel',awayTeam:'irn',date:'2026-06-21',time:'21:00'},
+  {id:'G_nzl_egy',group:'G',homeTeam:'nzl',awayTeam:'egy',date:'2026-06-22',time:'03:00'},
+  {id:'G_nzl_bel',group:'G',homeTeam:'nzl',awayTeam:'bel',date:'2026-06-27',time:'05:00'},
+  {id:'G_egy_irn',group:'G',homeTeam:'egy',awayTeam:'irn',date:'2026-06-27',time:'05:00'},
+  // GROUP H
+  {id:'H_esp_cpv',group:'H',homeTeam:'esp',awayTeam:'cpv',date:'2026-06-15',time:'18:00'},
+  {id:'H_sau_uru',group:'H',homeTeam:'sau',awayTeam:'uru',date:'2026-06-16',time:'00:00'},
+  {id:'H_esp_sau',group:'H',homeTeam:'esp',awayTeam:'sau',date:'2026-06-21',time:'18:00'},
+  {id:'H_uru_cpv',group:'H',homeTeam:'uru',awayTeam:'cpv',date:'2026-06-22',time:'00:00'},
+  {id:'H_uru_esp',group:'H',homeTeam:'uru',awayTeam:'esp',date:'2026-06-27',time:'02:00'},
+  {id:'H_cpv_sau',group:'H',homeTeam:'cpv',awayTeam:'sau',date:'2026-06-27',time:'02:00'},
+  // GROUP I
+  {id:'I_fra_sen',group:'I',homeTeam:'fra',awayTeam:'sen',date:'2026-06-16',time:'21:00'},
+  {id:'I_irq_nor',group:'I',homeTeam:'irq',awayTeam:'nor',date:'2026-06-17',time:'00:00'},
+  {id:'I_fra_irq',group:'I',homeTeam:'fra',awayTeam:'irq',date:'2026-06-22',time:'23:00'},
+  {id:'I_nor_sen',group:'I',homeTeam:'nor',awayTeam:'sen',date:'2026-06-23',time:'02:00'},
+  {id:'I_nor_fra',group:'I',homeTeam:'nor',awayTeam:'fra',date:'2026-06-26',time:'21:00'},
+  {id:'I_sen_irq',group:'I',homeTeam:'sen',awayTeam:'irq',date:'2026-06-26',time:'21:00'},
+  // GROUP J
+  {id:'J_arg_alg',group:'J',homeTeam:'arg',awayTeam:'alg',date:'2026-06-17',time:'03:00'},
+  {id:'J_aut_jor',group:'J',homeTeam:'aut',awayTeam:'jor',date:'2026-06-17',time:'06:00'},
+  {id:'J_arg_aut',group:'J',homeTeam:'arg',awayTeam:'aut',date:'2026-06-22',time:'19:00'},
+  {id:'J_jor_alg',group:'J',homeTeam:'jor',awayTeam:'alg',date:'2026-06-23',time:'05:00'},
+  {id:'J_jor_arg',group:'J',homeTeam:'jor',awayTeam:'arg',date:'2026-06-28',time:'04:00'},
+  {id:'J_alg_aut',group:'J',homeTeam:'alg',awayTeam:'aut',date:'2026-06-28',time:'04:00'},
+  // GROUP K
+  {id:'K_por_drn',group:'K',homeTeam:'por',awayTeam:'drn',date:'2026-06-17',time:'19:00'},
+  {id:'K_uzb_col',group:'K',homeTeam:'uzb',awayTeam:'col',date:'2026-06-18',time:'04:00'},
+  {id:'K_por_uzb',group:'K',homeTeam:'por',awayTeam:'uzb',date:'2026-06-23',time:'19:00'},
+  {id:'K_col_drn',group:'K',homeTeam:'col',awayTeam:'drn',date:'2026-06-24',time:'04:00'},
+  {id:'K_col_por',group:'K',homeTeam:'col',awayTeam:'por',date:'2026-06-28',time:'01:30'},
+  {id:'K_drn_uzb',group:'K',homeTeam:'drn',awayTeam:'uzb',date:'2026-06-28',time:'01:30'},
+  // GROUP L
+  {id:'L_eng_cro',group:'L',homeTeam:'eng',awayTeam:'cro',date:'2026-06-17',time:'22:00'},
+  {id:'L_gha_pan',group:'L',homeTeam:'gha',awayTeam:'pan',date:'2026-06-18',time:'01:00'},
+  {id:'L_eng_gha',group:'L',homeTeam:'eng',awayTeam:'gha',date:'2026-06-23',time:'22:00'},
+  {id:'L_pan_cro',group:'L',homeTeam:'pan',awayTeam:'cro',date:'2026-06-24',time:'01:00'},
+  {id:'L_pan_eng',group:'L',homeTeam:'pan',awayTeam:'eng',date:'2026-06-27',time:'23:00'},
+  {id:'L_cro_gha',group:'L',homeTeam:'cro',awayTeam:'gha',date:'2026-06-27',time:'23:00'}
+];
+
+// Knockout – TBD
+var KNOCKOUT=[
+  {id:'r32_1',group:'R32',homeTeam:'rsa',awayTeam:'can',date:'2026-06-28',time:'21:00',label:'R32 1 · 2A-2B'},
+  {id:'r32_2',group:'R32',homeTeam:'bra',awayTeam:'jpn',date:'2026-06-29',time:'19:00',label:'R32 2 · 1C-2F'},
+  {id:'r32_3',group:'R32',homeTeam:'ger',awayTeam:'swe',date:'2026-06-29',time:'22:30',label:'R32 3 · 1E-3.místo'},
+  {id:'r32_4',group:'R32',homeTeam:'ned',awayTeam:'mar',date:'2026-06-30',time:'03:00',label:'R32 4 · 1F-2C'},
+  {id:'r32_5',group:'R32',homeTeam:'civ',awayTeam:'nor',date:'2026-06-30',time:'19:00',label:'R32 5 · 2E-2I'},
+  {id:'r32_6',group:'R32',homeTeam:'fra',awayTeam:'sen',date:'2026-06-30',time:'23:00',label:'R32 6 · 1I-3.místo'},
+  {id:'r32_7',group:'R32',homeTeam:'mex',awayTeam:'ecu',date:'2026-07-01',time:'03:00',label:'R32 7 · 1A-3.místo'},
+  {id:'r32_8',group:'R32',homeTeam:'eng',awayTeam:'bih',date:'2026-07-01',time:'18:00',label:'R32 8 · 1L-3.místo'},
+  {id:'r32_9',group:'R32',homeTeam:'bel',awayTeam:'par',date:'2026-07-01',time:'22:00',label:'R32 9 · 1G-3.místo'},
+  {id:'r32_10',group:'R32',homeTeam:'aus',awayTeam:'TBD',date:'2026-07-02',time:'03:00',label:'R32 10 · 2D-2J'},
+  {id:'r32_11',group:'R32',homeTeam:'esp',awayTeam:'TBD',date:'2026-07-02',time:'19:00',label:'R32 11 · 1H-3.místo'},
+  {id:'r32_12',group:'R32',homeTeam:'usa',awayTeam:'egy',date:'2026-07-02',time:'23:00',label:'R32 12 · 1D-2G'},
+  {id:'r16_1',group:'R16',homeTeam:'TBD',awayTeam:'TBD',date:'2026-07-04',time:'19:00',label:'Osmifinále 1'},
+  {id:'r16_2',group:'R16',homeTeam:'TBD',awayTeam:'TBD',date:'2026-07-04',time:'23:00',label:'Osmifinále 2'},
+  {id:'r16_3',group:'R16',homeTeam:'TBD',awayTeam:'TBD',date:'2026-07-05',time:'19:00',label:'Osmifinále 3'},
+  {id:'r16_4',group:'R16',homeTeam:'TBD',awayTeam:'TBD',date:'2026-07-05',time:'23:00',label:'Osmifinále 4'},
+  {id:'r16_5',group:'R16',homeTeam:'TBD',awayTeam:'TBD',date:'2026-07-06',time:'19:00',label:'Osmifinále 5'},
+  {id:'r16_6',group:'R16',homeTeam:'TBD',awayTeam:'TBD',date:'2026-07-06',time:'23:00',label:'Osmifinále 6'},
+  {id:'r16_7',group:'R16',homeTeam:'TBD',awayTeam:'TBD',date:'2026-07-07',time:'19:00',label:'Osmifinále 7'},
+  {id:'r16_8',group:'R16',homeTeam:'TBD',awayTeam:'TBD',date:'2026-07-07',time:'23:00',label:'Osmifinále 8'},
+  {id:'qf1',group:'QF',homeTeam:'TBD',awayTeam:'TBD',date:'2026-07-10',time:'19:00',label:'⚽ Čtvrtfinále 1'},
+  {id:'qf2',group:'QF',homeTeam:'TBD',awayTeam:'TBD',date:'2026-07-10',time:'23:00',label:'⚽ Čtvrtfinále 2'},
+  {id:'qf3',group:'QF',homeTeam:'TBD',awayTeam:'TBD',date:'2026-07-11',time:'19:00',label:'⚽ Čtvrtfinále 3'},
+  {id:'qf4',group:'QF',homeTeam:'TBD',awayTeam:'TBD',date:'2026-07-11',time:'23:00',label:'⚽ Čtvrtfinále 4'},
+  {id:'sf1',group:'SF',homeTeam:'TBD',awayTeam:'TBD',date:'2026-07-14',time:'23:00',label:'🏆 Semifinále 1'},
+  {id:'sf2',group:'SF',homeTeam:'TBD',awayTeam:'TBD',date:'2026-07-15',time:'23:00',label:'🏆 Semifinále 2'},
+  {id:'bronze',group:'3M',homeTeam:'TBD',awayTeam:'TBD',date:'2026-07-18',time:'23:00',label:'🥉 O 3. místo'},
+  {id:'final',group:'FIN',homeTeam:'TBD',awayTeam:'TBD',date:'2026-07-19',time:'21:00',label:'🏆 FINÁLE'}
+];
+var ALL_MATCHES=GROUP_MATCHES.concat(KNOCKOUT);
+
+function isLocked(m){var dt=new Date(m.date+'T'+m.time+':00');return new Date()>=(new Date(dt.getTime()-3600000));}
+function isChampLocked(){return new Date()>=(new Date('2026-06-11T20:00:00'));}
+
+// ── AUTH ──────────────────────────────────────────────────
+var currentUser=null,pinTarget=null,pinMode=null,pinBuf='',pinFirst='';
+
+function renderPlayerGrid(){
+  var g=document.getElementById('player-grid');if(!g)return;
+  var el;g.innerHTML='';
+  for(var i=0;i<PLAYERS.length;i++){
+    (function(p){
+      var has=!!getPin(p.id);
+      el=document.createElement('div');el.className='player-btn'+(has?'':' no-pin');
+      el.addEventListener('click',function(){openPin(p.id);});
+      el.innerHTML='<div class="avatar-wrap">'+makeAvatar(p.id,p.gender)+'</div>'
+        +'<div class="p-name">'+p.name+'</div>'
+        +'<div class="p-status">'+(has?'PIN nastaven':'Nastavit PIN')+'</div>';
+      g.appendChild(el);
+    })(PLAYERS[i]);
+  }
+  el=document.createElement('div');el.className='player-btn no-pin';el.style.opacity='.35';
+  el.addEventListener('click',function(){openPin('admin');});
+  el.innerHTML='<div class="avatar-wrap" style="display:flex;align-items:center;justify-content:center;background:#0a2a0a;border-radius:50%;font-size:22px;">&#9881;&#65039;</div>'
+    +'<div class="p-name">Admin</div><div class="p-status">Admin</div>';
+  g.appendChild(el);
+}
+
+function openPin(id){
+  pinBuf='';pinFirst='';
+  if(id==='admin'){
+    pinTarget='admin';pinMode='login';
+    document.getElementById('po-avatar').innerHTML='<div style="background:#0a2a0a;width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;">&#9881;&#65039;</div>';
+    document.getElementById('po-name').textContent='Admin';
+  }else{
+    pinTarget=null;for(var i=0;i<PLAYERS.length;i++) if(PLAYERS[i].id===id){pinTarget=PLAYERS[i];break;}
+    if(!pinTarget)return;
+    document.getElementById('po-avatar').innerHTML=makeAvatar(pinTarget.id,pinTarget.gender);
+    document.getElementById('po-name').textContent=pinTarget.name;
+    pinMode=getPin(pinTarget.id)?'login':'setup';
+  }
+  document.getElementById('po-err').textContent='';
+  document.getElementById('pin-overlay').style.display='flex';
+  refreshPinUI();
+}
+function refreshPinUI(){
+  var dots='';for(var i=0;i<4;i++) dots+='<div class="pin-dot'+(pinBuf.length>i?' filled':'')+'"></div>';
+  document.getElementById('po-dots').innerHTML=dots;
+  var lbl=document.getElementById('po-label'),note=document.getElementById('po-note');
+  if(pinMode==='login'){lbl.textContent='Zadej PIN';note.style.display='none';}
+  else if(pinMode==='setup'){lbl.textContent='Zvol si PIN (4 číslice)';note.style.display='block';note.textContent='Poprvé – nastav si vlastní PIN!';}
+  else{lbl.textContent='Potvrď PIN znovu';note.style.display='none';}
+  var kp=document.getElementById('po-keypad');kp.innerHTML='';
+  ['1','2','3','4','5','6','7','8','9'].forEach(function(k){
+    var b=document.createElement('button');b.className='kbtn';b.textContent=k;
+    b.addEventListener('click',function(){kP(k);});kp.appendChild(b);
+  });
+  var back=document.createElement('button');back.className='kbtn sym';back.textContent='Zpět';back.addEventListener('click',pinClose);kp.appendChild(back);
+  var z=document.createElement('button');z.className='kbtn';z.textContent='0';z.addEventListener('click',function(){kP('0');});kp.appendChild(z);
+  var d=document.createElement('button');d.className='kbtn sym';d.textContent='⌫';d.addEventListener('click',kDel);kp.appendChild(d);
+}
+function kP(k){if(pinBuf.length>=4)return;pinBuf+=k;document.getElementById('po-err').textContent='';refreshPinUI();if(pinBuf.length===4)setTimeout(checkPin,80);}
+function kDel(){pinBuf=pinBuf.slice(0,-1);document.getElementById('po-err').textContent='';refreshPinUI();}
+function pinClose(){document.getElementById('pin-overlay').style.display='none';pinBuf='';pinFirst='';}
+function checkPin(){
+  if(pinMode==='login'){var ok=pinTarget==='admin'?ADMIN_PIN:getPin(pinTarget.id);if(pinBuf===ok){pinClose();doLogin();}else errPin('Špatný PIN');}
+  else if(pinMode==='setup'){pinFirst=pinBuf;pinBuf='';pinMode='setup2';refreshPinUI();}
+  else{if(pinBuf===pinFirst){setPin(pinTarget.id,pinBuf);pinClose();renderPlayerGrid();showToast('PIN nastaven!');setTimeout(doLogin,400);}else{errPin('PINy se neshodují');pinMode='setup';pinFirst='';}}
+}
+function errPin(m){document.getElementById('po-err').textContent=m;pinBuf='';refreshPinUI();}
+function showApp(user){
+  currentUser=user;
+  if(user.id==='admin'){document.getElementById('ub-avatar').innerHTML='<div style="background:#0a2a0a;width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;">&#9881;&#65039;</div>';document.getElementById('nav-admin').style.display='block';}
+  else{document.getElementById('ub-avatar').innerHTML=makeAvatar(user.id,user.gender);document.getElementById('nav-admin').style.display='none';}
+  document.getElementById('ub-name').textContent=user.name;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  switchTab('tipovat');
+}
+function doLogin(){var user=pinTarget==='admin'?{id:'admin',name:'Admin',gender:'m'}:pinTarget;S.s('session',{id:user.id});showApp(user);}
+function logout(){currentUser=null;S.d('session');document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';renderPlayerGrid();}
+
+// ── TABS ──────────────────────────────────────────────────
+function switchTab(name){
+  ['tipovat','leaderboard','moje','odehrane','skuptab','admin'].forEach(function(t){document.getElementById('tab-'+t).style.display=t===name?'block':'none';});
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+  var map={tipovat:'tipovat',leaderboard:'tabulka',moje:'moje tipy',admin:'admin'};
+  document.querySelectorAll('.nav-btn').forEach(function(b){if(b.textContent.trim().toLowerCase()===map[name])b.classList.add('active');});
+  if(name==='tipovat')renderTipovat();
+  if(name==='leaderboard')renderLeaderboard();
+  if(name==='moje')renderMoje();
+  if(name==='odehrane')renderOdehrane();
+  if(name==='skuptab')renderSkupTab();
+  if(name==='admin')renderAdmin();
+}
+
+// ── CHAMPION ──────────────────────────────────────────────
+function renderChampBlock(){
+  var locked=isChampLocked(),myPick=currentUser?getChampTip(currentUser.id):null;
+  var myTeam=myPick?getTeam(myPick):null,champ=getChampResult(),champTeam=champ?getTeam(champ):null;
+  var div=document.createElement('div');div.className='champ-block';
+  var html='<div class="champ-title">⚽ Vítěz šampionátu</div>';
+  if(locked){
+    html+='<div class="champ-sub">Uzavřeno · správný tip = +50 bodů</div>';
+    html+=myTeam?'<div class="champ-saved">✅ Tvůj tip: '+myTeam.f+' '+myTeam.n+'</div>':'<div class="champ-saved" style="color:var(--dim)">Bez tipu</div>';
+    if(champTeam) html+='<div style="margin-top:8px;padding:8px 12px;background:rgba(247,201,72,.1);border:1px solid rgba(247,201,72,.3);border-radius:8px;font-size:13px;font-weight:700;">🏆 Šampion: '+champTeam.f+' '+champTeam.n+'</div>';
+  }else{
+    html+='<div class="champ-sub">Uzavírá se před prvním zápasem (11.6. 20:00) · +50 bodů</div>';
+    var opts='<option value="">– vyber tým –</option>';
+    ALL_TEAMS.filter(function(t){return t.id!=='TBD';}).forEach(function(t){opts+='<option value="'+t.id+'"'+(myPick===t.id?' selected':'')+'>'+t.f+' '+t.n+'</option>';});
+    html+='<select class="champ-select" id="champ-select">'+opts+'</select>';
+    if(myTeam)html+='<div class="champ-saved" style="margin-top:8px;">✅ Aktuální tip: '+myTeam.f+' '+myTeam.n+'</div>';
+  }
+  div.innerHTML=html;
+  if(!locked){
+    var btn=document.createElement('button');btn.className='champ-save';btn.textContent='Uložit tip na vítěze';
+    btn.addEventListener('click',function(){
+      var sel=document.getElementById('champ-select');
+      if(!sel||!sel.value){showToast('Vyber tým!');return;}
+      saveChampTipLS(currentUser.id,sel.value);showToast('Tip na vítěze uložen!');renderTipovat();
+    });
+    div.appendChild(btn);
+  }
+  return div;
+}
+
+// ── TIPOVAT ───────────────────────────────────────────────
+var activeGrp='A';
+var GROUP_KEYS=['A','B','C','D','E','F','G','H','I','J','K','L','KO'];
+
+function renderUrgencyBanner(){
+  if(!currentUser||currentUser.id==='admin')return null;
+  var now=new Date(),threshold=now.getTime()+2*3600000;
+  var urgent=[];
+  var allM=GROUP_MATCHES.concat(KNOCKOUT);
+  for(var i=0;i<allM.length;i++){
+    var m=allM[i];
+    if(isLocked(m))continue;
+    var dt=new Date(m.date+'T'+m.time+':00');
+    var lockTime=dt.getTime()-600000;
+    if(lockTime<=threshold&&lockTime>now.getTime()){
+      var tip=getTip(currentUser.id,m.id);
+      if(!tip){
+        var ht=getTeam(m.homeTeam),at=getTeam(m.awayTeam);
+        var minLeft=Math.round((lockTime-now.getTime())/60000);
+        urgent.push({label:ht.f+' '+ht.n+' – '+at.n+' '+at.f,mins:minLeft,critical:minLeft<=15});
+      }
+    }
+  }
+  if(!urgent.length)return null;
+  var banner=document.createElement('div');banner.className='urgency-banner';
+  var html='<div class="ub-icon">⏰</div><div class="ub-body">'
+    +'<div class="ub-title">Pozor! Brzy se uzavírá tipování</div>'
+    +'<div class="ub-matches">';
+  urgent.forEach(function(u){
+    var cls=u.critical?'ub-time urgent':'ub-time';
+    var timeLabel=u.mins<=0?'Právě':'Za '+u.mins+' min';
+    html+='<div class="ub-match"><span class="'+cls+'">'+timeLabel+'</span>'+u.label+'</div>';
+  });
+  html+='</div></div>';
+  banner.innerHTML=html;
+  return banner;
+}
+
+function renderSkupTab(){
+  var el=document.getElementById('tab-skuptab');
+  var grpKeys=['A','B','C','D','E','F','G','H','I','J','K','L'];
+  el.innerHTML='<div class="gt-wrap" id="gt-inner"></div>';
+  var wrap=document.getElementById('gt-inner');
+
+  function buildGroupTable(g){
+    var teams=GROUPS[g].map(function(t){
+      return {id:t.id,n:t.n,f:t.f,pts:0,w:0,d:0,l:0,gf:0,ga:0,mp:0};
+    });
+    var teamIdx={};
+    teams.forEach(function(t,i){teamIdx[t.id]=i;});
+    GROUP_MATCHES.filter(function(m){return m.group===g;}).forEach(function(m){
+      var res=getResult(m.id);if(!res)return;
+      var hi=teamIdx[m.homeTeam],ai=teamIdx[m.awayTeam];
+      if(hi===undefined||ai===undefined)return;
+      var h=res.home,a=res.away;
+      teams[hi].gf+=h;teams[hi].ga+=a;teams[hi].mp++;
+      teams[ai].gf+=a;teams[ai].ga+=h;teams[ai].mp++;
+      if(h>a){teams[hi].pts+=3;teams[hi].w++;teams[ai].l++;}
+      else if(h<a){teams[ai].pts+=3;teams[ai].w++;teams[hi].l++;}
+      else{teams[hi].pts+=1;teams[hi].d++;teams[ai].pts+=1;teams[ai].d++;}
+    });
+    teams.sort(function(a,b){
+      if(b.pts!==a.pts)return b.pts-a.pts;
+      var gdA=a.gf-a.ga,gdB=b.gf-b.ga;
+      if(gdB!==gdA)return gdB-gdA;
+      return b.gf-a.gf;
+    });
+    var div=document.createElement('div');div.className='gt-grp';
+    div.innerHTML='<div class="gt-grp-title">Skupina '+g+'</div>';
+    var table=document.createElement('table');table.className='gt-table';
+    table.innerHTML='<thead><tr><th style="text-align:left">Tým</th><th>Z</th><th>V</th><th>R</th><th>P</th><th>Skóre</th><th>B</th></tr></thead>';
+    var tbody=document.createElement('tbody');
+    teams.forEach(function(t,i){
+      var tr=document.createElement('tr');
+      if(i<2)tr.className='qualified';
+      var gd=(t.gf-t.ga>=0?'+':'')+(t.gf-t.ga);
+      tr.innerHTML='<td><span class="gt-rank">'+(i+1)+'.</span><span class="gt-flag">'+t.f+'</span><span class="gt-name">'+t.n+'</span></td>'
+        +'<td>'+t.mp+'</td><td>'+t.w+'</td><td>'+t.d+'</td><td>'+t.l+'</td>'
+        +'<td>'+t.gf+':'+t.ga+' <span style="color:var(--dim);font-size:11px;">('+gd+')</span></td>'
+        +'<td class="gt-pts">'+t.pts+'</td>';
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    div.appendChild(table);
+    return div;
+  }
+
+  grpKeys.forEach(function(g){
+    wrap.appendChild(buildGroupTable(g));
+  });
+
+  // Třetí místa
+  var thirdDiv=document.createElement('div');thirdDiv.className='gt-grp';
+  thirdDiv.style.marginTop='8px';
+  thirdDiv.innerHTML='<div class="gt-grp-title" style="color:#3ecf8e;">🏅 Nejlepší třetí místa (8 postupuje)</div>';
+
+  var thirds=[];
+  grpKeys.forEach(function(g){
+    var teams=GROUPS[g].map(function(t){
+      return {id:t.id,n:t.n,f:t.f,pts:0,w:0,d:0,l:0,gf:0,ga:0,mp:0,grp:g};
+    });
+    var teamIdx={};
+    teams.forEach(function(t,i){teamIdx[t.id]=i;});
+    GROUP_MATCHES.filter(function(m){return m.group===g;}).forEach(function(m){
+      var res=getResult(m.id);if(!res)return;
+      var hi=teamIdx[m.homeTeam],ai=teamIdx[m.awayTeam];
+      if(hi===undefined||ai===undefined)return;
+      var h=res.home,a=res.away;
+      teams[hi].gf+=h;teams[hi].ga+=a;teams[hi].mp++;
+      teams[ai].gf+=a;teams[ai].ga+=h;teams[ai].mp++;
+      if(h>a){teams[hi].pts+=3;teams[hi].w++;teams[ai].l++;}
+      else if(h<a){teams[ai].pts+=3;teams[ai].w++;teams[hi].l++;}
+      else{teams[hi].pts+=1;teams[hi].d++;teams[ai].pts+=1;teams[ai].d++;}
+    });
+    teams.sort(function(a,b){
+      if(b.pts!==a.pts)return b.pts-a.pts;
+      if((b.gf-b.ga)!==(a.gf-a.ga))return (b.gf-b.ga)-(a.gf-a.ga);
+      return b.gf-a.gf;
+    });
+    if(teams[2])thirds.push(teams[2]);
+  });
+
+  // Sort thirds by pts, gd, gf
+  thirds.sort(function(a,b){
+    if(b.pts!==a.pts)return b.pts-a.pts;
+    if((b.gf-b.ga)!==(a.gf-a.ga))return (b.gf-b.ga)-(a.gf-a.ga);
+    return b.gf-a.gf;
+  });
+
+  var tbl=document.createElement('table');tbl.className='gt-table';
+  tbl.innerHTML='<thead><tr><th style="text-align:left">Tým</th><th>Sk.</th><th>Z</th><th>V</th><th>R</th><th>P</th><th>Skóre</th><th>B</th></tr></thead>';
+  var tbody=document.createElement('tbody');
+
+  thirds.forEach(function(t,i){
+    var tr=document.createElement('tr');
+    if(i<8)tr.className='qualified';
+    var gd=(t.gf-t.ga>=0?'+':'')+(t.gf-t.ga);
+    tr.innerHTML='<td><span class="gt-rank">'+(i+1)+'.</span><span class="gt-flag">'+t.f+'</span><span class="gt-name">'+t.n+'</span></td>'
+      +'<td style="color:var(--gold);font-weight:700;">'+t.grp+'</td>'
+      +'<td>'+t.mp+'</td><td>'+t.w+'</td><td>'+t.d+'</td><td>'+t.l+'</td>'
+      +'<td>'+t.gf+':'+t.ga+' <span style="color:var(--dim);font-size:11px;">('+gd+')</span></td>'
+      +'<td class="gt-pts">'+t.pts+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  if(!thirds.length){
+    var nd=document.createElement('div');
+    nd.style.cssText='padding:20px;text-align:center;color:rgba(255,255,255,.3);font-size:13px;';
+    nd.textContent='Zatím žádné výsledky';
+    thirdDiv.appendChild(nd);
+  } else {
+    tbl.appendChild(tbody);
+    thirdDiv.appendChild(tbl);
+    var note=document.createElement('div');
+    note.style.cssText='font-size:10px;color:rgba(255,255,255,.3);padding:8px 0 0;';
+    note.textContent='Zelené = postupující (top 8 třetích míst)';
+    thirdDiv.appendChild(note);
+  }
+  wrap.appendChild(thirdDiv);
+}
+
+function renderOdehrane(){
+  var el=document.getElementById('tab-odehrane');
+  var isAdmin=currentUser&&currentUser.id==='admin';
+  var allM=GROUP_MATCHES.concat(KNOCKOUT);
+  var done=allM.filter(function(m){return !!getResult(m.id);});
+  done.sort(function(a,b){var da=a.date+a.time,db=b.date+b.time;return da<db?1:da>db?-1:0;});
+  if(!done.length){el.innerHTML='<div style="padding:40px;text-align:center;color:rgba(255,255,255,.3);">Zatím žádné odehrané zápasy.</div>';return;}
+  var byDate={};
+  done.forEach(function(m){if(!byDate[m.date])byDate[m.date]=[];byDate[m.date].push(m);});
+  var dates=Object.keys(byDate).sort().reverse();
+  el.innerHTML='';
+  dates.forEach(function(date){
+    var divEl=document.createElement('div');divEl.className='date-divider';
+    divEl.textContent=new Date(date+'T12:00:00').toLocaleDateString('cs-CZ',{weekday:'long',day:'numeric',month:'long'});
+    el.appendChild(divEl);
+    byDate[date].forEach(function(m){el.appendChild(buildMatchCard(m));});
+  });
+}
+
+var fotbalViewMode='dny';
+var fotbalActiveGrp='A';
+
+function renderTipovat(){
+  var isAdmin=currentUser&&currentUser.id==='admin';
+  var el=document.getElementById('tab-tipovat');
+  el.innerHTML='<div id="champ-container"></div>'
+    +'<div id="view-toggle-wrap"></div>'
+    +'<div id="grp-tabs-wrap"></div>'
+    +'<div id="match-list"></div>'
+    +'<div class="save-all-wrap"><button class="save-all-btn" onclick="saveAll()">Uložit všechny tipy</button></div>';
+
+  if(!isAdmin){
+    var cc=document.getElementById('champ-container');
+    if(cc){
+      var banner=renderUrgencyBanner();
+      if(banner)cc.appendChild(banner);
+      cc.appendChild(renderChampBlock());
+    }
+  }
+
+  var vt=document.getElementById('view-toggle-wrap');
+  var wrap=document.createElement('div');wrap.className='view-toggle';
+  var btnD=document.createElement('button');
+  btnD.className='vt-btn'+(fotbalViewMode==='dny'?' active':'');
+  btnD.textContent='Po dnech';
+  btnD.addEventListener('click',function(){fotbalViewMode='dny';renderMatchList();updateToggle();});
+  var btnS=document.createElement('button');
+  btnS.className='vt-btn'+(fotbalViewMode==='skupiny'?' active':'');
+  btnS.textContent='Skupiny';
+  btnS.addEventListener('click',function(){fotbalViewMode='skupiny';renderTipovat();});
+  wrap.appendChild(btnD);wrap.appendChild(btnS);vt.appendChild(wrap);
+
+  if(fotbalViewMode==='skupiny'){
+    var gt=document.getElementById('grp-tabs-wrap');
+    var tabs=document.createElement('div');tabs.className='inner-tabs';
+    var grpList=['A','B','C','D','E','F','G','H','I','J','K','L','KO'];
+    grpList.forEach(function(g){
+      var t=document.createElement('div');
+      t.className='itab'+(fotbalActiveGrp===g?' active':'');
+      t.textContent=g==='KO'?'Playoff':'Skupina '+g;
+      t.addEventListener('click',function(){fotbalActiveGrp=g;renderMatchList();});
+      tabs.appendChild(t);
+    });
+    gt.appendChild(tabs);
+  }
+
+  renderMatchList();
+}
+
+function updateToggle(){
+  var btns=document.querySelectorAll('#view-toggle-wrap .vt-btn');
+  if(btns[0])btns[0].className='vt-btn'+(fotbalViewMode==='dny'?' active':'');
+  if(btns[1])btns[1].className='vt-btn'+(fotbalViewMode==='skupiny'?' active':'');
+}
+
+function buildMatchCard(m){
+  var locked=isLocked(m),ht=getTeam(m.homeTeam),at=getTeam(m.awayTeam);
+  var isAdmin=currentUser&&currentUser.id==='admin';
+  var tip=(!isAdmin&&currentUser)?getTip(currentUser.id,m.id):null;
+  var result=getResult(m.id);
+  var isTBD=m.homeTeam==='TBD'||m.awayTeam==='TBD';
+  var card=document.createElement('div');card.className='match-card'+(tip?' has-tip':'')+(locked?' locked':'');
+  var row=document.createElement('div');row.className='match-row';
+  // Time
+  var te=document.createElement('div');te.className='mr-time';
+  te.innerHTML='<div class="mr-date">'+m.date.slice(5).replace('-','.')+'</div>'
+    +'<div class="mr-clock">'+m.time+'</div>'
+    +'<span class="mr-lock '+(locked?'closed':'open')+'">'+(locked?'Uzavřeno':'Otevřeno')+'</span>'
+    +(m.label?'<div style="font-size:8px;color:var(--gold);font-weight:700;margin-top:1px;">'+m.label+'</div>':'');
+  row.appendChild(te);
+  // Home
+  var he=document.createElement('div');he.className='mr-home';
+  if(isAdmin&&m.homeTeam==='TBD'){
+    he.className='ko-team-wrap';
+    var selH=document.createElement('select');selH.className='team-sel';selH.id='th_'+m.id;
+    selH.innerHTML='<option value="">-- Domácí --</option>';
+    ALL_TEAMS.forEach(function(t){if(t.id==='TBD')return;selH.innerHTML+='<option value="'+t.id+'">'+t.f+' '+t.n+'</option>';});
+    he.appendChild(selH);
+  } else {
+    he.innerHTML='<span class="t-name right">'+ht.n+'</span><span class="t-flag">'+ht.f+'</span>';
+  }
+  row.appendChild(he);
+  // Score
+  var se=document.createElement('div');
+  if(isAdmin&&result){
+    se.className='mr-result';
+    se.innerHTML='<span class="res-num">'+result.home+'</span><span class="res-sep">:</span><span class="res-num">'+result.away+'</span>';
+  }else{
+    se.className='mr-score';
+    var ih=document.createElement('input');ih.type='number';ih.className='score-in';ih.min=0;ih.max=20;ih.placeholder='0';
+    ih.id=(isAdmin?'rh_':'h_')+m.id;if(tip!=null&&!isAdmin)ih.value=tip.home;if(result&&isAdmin)ih.value=result.home;if(locked&&!isAdmin)ih.disabled=true;
+    var sep=document.createElement('span');sep.className='score-sep';sep.textContent=':';
+    var ia=document.createElement('input');ia.type='number';ia.className='score-in';ia.min=0;ia.max=20;ia.placeholder='0';
+    ia.id=(isAdmin?'ra_':'a_')+m.id;if(tip!=null&&!isAdmin)ia.value=tip.away;if(result&&isAdmin)ia.value=result.away;if(locked&&!isAdmin)ia.disabled=true;
+    se.appendChild(ih);se.appendChild(sep);se.appendChild(ia);
+  }
+  row.appendChild(se);
+  // Away
+  var ae=document.createElement('div');ae.className='mr-away';
+  if(isAdmin&&m.awayTeam==='TBD'){
+    ae.className='ko-team-wrap';
+    var selA=document.createElement('select');selA.className='team-sel';selA.id='ta_'+m.id;
+    selA.innerHTML='<option value="">-- Hosté --</option>';
+    ALL_TEAMS.forEach(function(t){if(t.id==='TBD')return;selA.innerHTML+='<option value="'+t.id+'">'+t.f+' '+t.n+'</option>';});
+    ae.appendChild(selA);
+  } else {
+    ae.innerHTML='<span class="t-flag">'+at.f+'</span><span class="t-name">'+at.n+'</span>';
+  }
+  row.appendChild(ae);
+  // Action
+  var act=document.createElement('div');act.className='mr-action';
+  if(isAdmin){
+    if(result){
+      var okS=document.createElement('span');okS.className='tip-ok';okS.textContent='OK';act.appendChild(okS);
+      (function(mid){var db2=document.createElement('button');db2.className='del-btn';db2.textContent='✕';
+        db2.addEventListener('click',function(){if(confirm('Smazat výsledek?')){deleteResultLS(mid);showToast('Smazáno');renderMatchList();}});
+        act.appendChild(db2);})(m.id);
+    }else{
+      (function(mid){var sb=document.createElement('button');sb.className='save-btn';sb.textContent='Uložit';
+        sb.addEventListener('click',function(){
+          var h=parseInt(document.getElementById('rh_'+mid).value),a=parseInt(document.getElementById('ra_'+mid).value);
+          if(isNaN(h)||isNaN(a)){showToast('Zadej oba');return;}
+          saveResultLS(mid,h,a);showToast('Uloženo!');var _sy=window.scrollY;renderMatchList();requestAnimationFrame(function(){window.scrollTo(0,_sy);});});
+        act.appendChild(sb);})(m.id);
+    }
+  }else{
+    if(locked){
+      var sp=document.createElement('span');sp.className='tip-ok';
+      sp.textContent=tip?'Uloženo':'Bez tipu';if(!tip)sp.style.cssText='font-size:10px;color:var(--red);font-weight:700;';
+      act.appendChild(sp);
+      if(tip&&result){var pts=calcPts(tip,result);var pp=document.createElement('span');pp.className='pts-pill '+(pts===20?'pts-exact':pts>0?'pts-win':'pts-zero');pp.textContent=pts===20?'+20!':pts>0?'+'+pts+'b':'0b';act.appendChild(pp);}
+    }else{
+      (function(mid,mm){
+        var sb=document.createElement('button');sb.className='save-btn';sb.textContent='Uložit';
+        sb.addEventListener('click',function(){
+          if(!mm||isLocked(mm)){showToast('Uzavřeno!');return;}
+          var h=parseInt(document.getElementById('h_'+mid).value),a=parseInt(document.getElementById('a_'+mid).value);
+          if(isNaN(h)||isNaN(a)){showToast('Zadej výsledek');return;}
+          saveTipLS(currentUser.id,mid,h,a);showToast('Tip uložen!');renderMatchList();});
+        act.appendChild(sb);
+        if(tip){
+          var ok=document.createElement('span');ok.className='tip-ok';ok.textContent='✓';act.appendChild(ok);
+          var db3=document.createElement('button');db3.className='del-tip-btn';db3.textContent='✕';
+          db3.addEventListener('click',function(){
+            if(!mm||isLocked(mm)){showToast('Uzavřeno!');return;}
+            deleteTipLS(currentUser.id,mid);showToast('Tip smazán');renderMatchList();});
+          act.appendChild(db3);}
+      })(m.id,m);
+    }
+  }
+  row.appendChild(act);card.appendChild(row);
+  // Result strip for players
+  if(!isAdmin&&result){
+    var strip=document.createElement('div');strip.className='result-strip';
+    strip.innerHTML='<span>Výsledek:</span><span class="rs-score">'+result.home+' : '+result.away+'</span><span style="color:var(--dim)">'+ht.n+' – '+at.n+'</span>';
+    card.appendChild(strip);
+  }
+  // Tipy ostatnich po uzavreni
+  if(locked){
+    var othStrip=document.createElement('div');othStrip.className='others-strip';
+    var lbl=document.createElement('div');lbl.className='oth-label';lbl.textContent='Tipy ostatních';
+    othStrip.appendChild(lbl);
+    var hasTips=false;
+    PLAYERS.forEach(function(p){
+      if(isAdmin&&p.id==='admin')return;
+      var pt=getTip(p.id,m.id);
+      if(!pt)return;
+      hasTips=true;
+      var pts=result?calcPts(pt,result):null;
+      var cls='oth-tip'+(pts===20?' exact':pts>0?' win':' miss');
+      var div=document.createElement('div');div.className=cls;
+      div.innerHTML='<span class="oth-name">'+p.name+'</span> '+pt.home+':'+pt.away
+        +(pts!==null&&pts>0?' <b>+'+pts+'b</b>':'');
+      othStrip.appendChild(div);
+    });
+    if(!hasTips){
+      var nd=document.createElement('div');nd.style.cssText='font-size:11px;color:rgba(255,255,255,.2);';
+      nd.textContent='Nikdo netipoval';othStrip.appendChild(nd);
+    }
+    card.appendChild(othStrip);
+  }
+  return card;
+}
+
+function renderMatchList(){
+  var el=document.getElementById('match-list');if(!el)return;
+  var matches;
+  if(fotbalViewMode==='dny'){
+    matches=GROUP_MATCHES.concat(KNOCKOUT);
+    matches=matches.filter(function(m){return !getResult(m.id);});
+    matches.sort(function(a,b){var da=a.date+a.time,db=b.date+b.time;return da<db?-1:da>db?1:0;});
+  } else {
+    if(fotbalActiveGrp==='KO') matches=KNOCKOUT;
+    else matches=GROUP_MATCHES.filter(function(m){return m.group===fotbalActiveGrp;});
+  }
+  var byDate={},i;
+  for(i=0;i<matches.length;i++){var m=matches[i];if(!byDate[m.date])byDate[m.date]=[];byDate[m.date].push(m);}
+  var dates=Object.keys(byDate).sort();
+  el.innerHTML='';
+  var today=new Date().toISOString().slice(0,10);
+  for(var d=0;d<dates.length;d++){
+    var dateStr=dates[d];
+    var isToday=dateStr===today;
+    var divEl=document.createElement('div');
+    divEl.className='date-divider'+(isToday?' today-divider':'');
+    var label=new Date(dateStr+'T12:00:00').toLocaleDateString('cs-CZ',{weekday:'long',day:'numeric',month:'long'});
+    if(isToday)label='Dnes · '+label;
+    divEl.textContent=label;
+    el.appendChild(divEl);
+    var ms=byDate[dateStr];
+    for(i=0;i<ms.length;i++)el.appendChild(buildMatchCard(ms[i]));
+  }
+}
+
+
+// ── SCORING ───────────────────────────────────────────────
+function calcPts(tip,result){
+  if(!tip||!result)return 0;
+  if(tip.home===result.home&&tip.away===result.away)return 20;
+  var pts=0;
+  var rw=result.home>result.away?'H':result.home<result.away?'A':'D';
+  var tw=tip.home>tip.away?'H':tip.home<tip.away?'A':'D';
+  if(rw===tw)pts+=10;
+  if((tip.home+tip.away)===(result.home+result.away))pts+=5;
+  return pts;
+}
+
+function playerScore(pid){
+  var total=0,exact=0,wins=0,tipped=0,champOk=false,i,m,r,t,pts,rw,tw;
+  for(i=0;i<GROUP_MATCHES.concat(KNOCKOUT).length;i++){
+    m=GROUP_MATCHES.concat(KNOCKOUT)[i];r=getResult(m.id);if(!r)continue;
+    t=getTip(pid,m.id);if(!t)continue;
+    tipped++;pts=calcPts(t,r);total+=pts;
+    if(pts===20)exact++;
+    else{rw=r.home>r.away?'H':r.home<r.away?'A':'D';tw=t.home>t.away?'H':t.home<t.away?'A':'D';if(rw===tw)wins++;}
+  }
+  var champ=getChampResult();if(champ&&getChampTip(pid)===champ){total+=50;champOk=true;}
+  return {total:total,exact:exact,wins:wins,tipped:tipped,champOk:champOk};
+}
+
+// ── LEADERBOARD ───────────────────────────────────────────
+function renderLeaderboard(){
+  var ranked=[],i,sc,p,med,rc;
+  for(i=0;i<PLAYERS.length;i++){sc=playerScore(PLAYERS[i].id);ranked.push({p:PLAYERS[i],sc:sc});}
+  ranked.sort(function(a,b){return b.sc.total-a.sc.total;});
+  var html='<div class="sh"><div class="sh-title">Tabulka tipérů</div></div><div class="lb-table">';
+  for(i=0;i<ranked.length;i++){
+    p=ranked[i].p;sc=ranked[i].sc;
+    med=i===0?'&#129351;':i===1?'&#129352;':i===2?'&#129353;':(i+1)+'.';rc=i===0?'g':i===1?'s':i===2?'b':'';
+    html+='<div class="lb-row"><div class="lb-rank '+rc+'">'+med+'</div>'
+      +'<div class="avatar-wrap" style="width:40px;height:40px;flex-shrink:0;">'+makeAvatar(p.id,p.gender)+'</div>'
+      +'<div class="lb-info"><div class="lb-name">'+p.name+'</div>'
+      +'<div class="lb-detail">Přesně: '+sc.exact+'× · Vítěz: '+sc.wins+'× · Tipy: '+sc.tipped+(sc.champOk?' · ⚽+50b':'')+'</div></div>'
+      +'<div><div class="lb-pts">'+sc.total+'</div><div class="lb-ptslabel">bodů</div></div></div>';
+  }
+  document.getElementById('tab-leaderboard').innerHTML=html+'</div>';
+}
+
+// ── MOJE TIPY ─────────────────────────────────────────────
+function renderMoje(){
+  var el=document.getElementById('tab-moje'),i,m,t,r,ht,at,pts,ph,rows=[];
+  if(!currentUser||currentUser.id==='admin'){el.innerHTML='<div class="empty"><div class="empty-txt">Přihlas se jako hráč</div></div>';return;}
+  for(i=0;i<GROUP_MATCHES.concat(KNOCKOUT).length;i++){
+    m=GROUP_MATCHES.concat(KNOCKOUT)[i];t=getTip(currentUser.id,m.id);if(!t)continue;
+    r=getResult(m.id);ht=getTeam(m.homeTeam);at=getTeam(m.awayTeam);
+    pts=r?calcPts(t,r):null;
+    ph=pts===null?'':pts===20?'<span class="pts-pill pts-exact">+20!</span>':pts>0?'<span class="pts-pill pts-win">+'+pts+'b</span>':'<span class="pts-pill pts-zero">0b</span>';
+    rows.push('<div class="match-card has-tip"><div class="match-row">'
+      +'<div class="mr-time"><div class="mr-date">'+m.date.slice(5).replace('-','.')+'</div><div class="mr-clock">'+m.time+'</div></div>'
+      +'<div class="mr-home"><span class="t-name right">'+ht.n+'</span><span class="t-flag">'+ht.f+'</span></div>'
+      +'<div class="mr-score"><span class="score-static">'+t.home+'</span><span class="score-sep">:</span><span class="score-static">'+t.away+'</span></div>'
+      +'<div class="mr-away"><span class="t-flag">'+at.f+'</span><span class="t-name">'+at.n+'</span></div>'
+      +'<div class="mr-action">'+ph+(r?'<div style="font-size:9px;color:var(--dim)">Výsl: '+r.home+':'+r.away+'</div>':'')+'</div>'
+      +'</div></div>');
+  }
+  el.innerHTML='<div class="sh"><div class="sh-title">Moje tipy</div><span class="sh-count">'+rows.length+'</span></div>'
+    +(rows.length?rows.join(''):'<div class="empty"><div class="empty-txt">Zatím žádné tipy</div></div>');
+}
+
+// ── ADMIN ─────────────────────────────────────────────────
+var adminGrp='A';
+function renderAdmin(){
+  var el=document.getElementById('tab-admin'),i,m,pt,champR;
+  if(!currentUser||currentUser.id!=='admin'){el.innerHTML='';return;}
+  pt=getPoT();champR=getChampResult();
+  var champOpts='';
+  ALL_TEAMS.filter(function(t){return t.id!=='TBD';}).forEach(function(t){champOpts+='<option value="'+t.id+'"'+(champR===t.id?' selected':'')+'>'+t.f+' '+t.n+'</option>';});
+
+  el.innerHTML='<div class="admin-card"><div class="admin-title">Zadat výsledky</div>'
+    +'<div class="inner-tabs" style="margin-bottom:14px">'
+    +GROUP_KEYS.map(function(g){return '<div class="itab'+(adminGrp===g?' active':'')+'" data-g="'+g+'">'+(g==='KO'?'Vyřaz.':'Sk. '+g)+'</div>';}).join('')
+    +'</div><div id="admin-res"></div></div>'
+    +'<div class="admin-card"><div class="admin-title">⚽ Vítěz šampionátu</div>'
+    +'<select class="po-select" id="champ-result-sel">'+champOpts+'</select>'
+    +'<button class="save-btn" style="margin-top:10px;width:100%" id="save-champ-btn">Uložit šampiona</button>'
+    +(champR?'<div style="margin-top:8px;font-size:12px;color:var(--green);font-weight:700;">✅ '+getTeam(champR).f+' '+getTeam(champR).n+'</div>':'')
+    +'</div>';
+
+  el.querySelectorAll('.itab').forEach(function(t){t.addEventListener('click',function(){switchAG(t.getAttribute('data-g'));});});
+  document.getElementById('save-champ-btn').addEventListener('click',function(){
+    var sel=document.getElementById('champ-result-sel');if(!sel||!sel.value){showToast('Vyber tým');return;}
+    saveChampResultLS(sel.value);showToast('Šampion uložen!');renderAdmin();
+  });
+  renderAR();
+}
+function switchAG(g){
+  adminGrp=g;
+  document.querySelectorAll('#tab-admin .itab').forEach(function(t){t.classList.toggle('active',t.getAttribute('data-g')===g);});
+  renderAR();
+}
+function buildTeamSelect(id, currentTeam){
+  var sel=document.createElement('select');sel.className='team-sel';sel.id=id;
+  sel.style.cssText='background:#0d1520;border:1px solid rgba(255,255,255,.2);border-radius:7px;color:#fff;font-size:11px;padding:4px;width:100%;';
+  sel.innerHTML='<option value="">-- Vyber tým --</option>';
+  ALL_TEAMS.filter(function(t){return t.id!=='TBD';}).forEach(function(t){
+    sel.innerHTML+='<option value="'+t.id+'"'+(currentTeam===t.id?' selected':'')+'>'+t.f+' '+t.n+'</option>';
+  });
+  return sel;
+}
+
+function renderAR(){
+  var el=document.getElementById('admin-res');if(!el)return;
+  var matches=adminGrp==='KO'?KNOCKOUT:GROUP_MATCHES.filter(function(m){return m.group===adminGrp;});
+  el.innerHTML='';
+  matches.forEach(function(m){
+    var ht=getTeam(m.homeTeam),at=getTeam(m.awayTeam),r=getResult(m.id);
+    var isTBD=m.homeTeam==='TBD'||m.awayTeam==='TBD';
+    var mid=m.id;
+
+    var wrap=document.createElement('div');
+    wrap.style.cssText='margin-bottom:10px;background:rgba(0,0,0,.2);border-radius:10px;padding:10px;';
+
+    // Label/date
+    if(m.label||m.date){
+      var lbl=document.createElement('div');
+      lbl.style.cssText='font-size:10px;color:var(--gold);font-weight:700;letter-spacing:1px;margin-bottom:6px;';
+      lbl.textContent=(m.label||'')+' · '+m.date.slice(5).replace('-','.')+' '+m.time;
+      wrap.appendChild(lbl);
+    }
+
+    // Team selects or names
+    if(isTBD){
+      var selRow=document.createElement('div');
+      selRow.style.cssText='display:flex;gap:6px;margin-bottom:6px;align-items:center;';
+      var selH=buildTeamSelect('th_'+mid, m.homeTeam!=='TBD'?m.homeTeam:'');
+      var vsSp=document.createElement('span');vsSp.textContent='vs';vsSp.style.cssText='color:var(--dim);font-size:11px;flex-shrink:0;';
+      var selA=buildTeamSelect('ta_'+mid, m.awayTeam!=='TBD'?m.awayTeam:'');
+      selRow.appendChild(selH);selRow.appendChild(vsSp);selRow.appendChild(selA);
+      wrap.appendChild(selRow);
+    }
+
+    var row=document.createElement('div');row.className='admin-row';
+    if(!isTBD){
+      row.innerHTML='<div class="res-team right">'+ht.f+' '+ht.n+'</div>';
+    } else {
+      var ph=document.createElement('div');ph.style.cssText='font-size:11px;color:var(--dim);flex:1;text-align:right;';ph.textContent='Domácí';
+      row.appendChild(ph);
+    }
+    var ih=document.createElement('input');ih.type='number';ih.className='res-input';ih.id='rh_'+mid;ih.min=0;ih.max=20;if(r)ih.value=r.home;ih.placeholder='0';
+    row.appendChild(ih);
+    var sp=document.createElement('span');sp.style.cssText='font-size:18px;color:var(--dim);';sp.textContent=':';
+    row.appendChild(sp);
+    var ia=document.createElement('input');ia.type='number';ia.className='res-input';ia.id='ra_'+mid;ia.min=0;ia.max=20;if(r)ia.value=r.away;ia.placeholder='0';
+    row.appendChild(ia);
+    if(!isTBD){
+      var atDiv=document.createElement('div');atDiv.className='res-team';atDiv.textContent=at.n+' '+at.f;
+      row.appendChild(atDiv);
+    } else {
+      var ph2=document.createElement('div');ph2.style.cssText='font-size:11px;color:var(--dim);flex:1;';ph2.textContent='Hosté';
+      row.appendChild(ph2);
+    }
+
+    var sb=document.createElement('button');sb.className='res-btn';sb.textContent='✓';
+    (function(mid,m){
+      sb.addEventListener('click',function(){
+        var h=parseInt(document.getElementById('rh_'+mid).value),a=parseInt(document.getElementById('ra_'+mid).value);
+        if(isNaN(h)||isNaN(a)){showToast('Zadej skóre!');return;}
+        // For TBD: update teams in Firebase
+        if(m.homeTeam==='TBD'||m.awayTeam==='TBD'){
+          var thEl=document.getElementById('th_'+mid);
+          var taEl=document.getElementById('ta_'+mid);
+          var newHome=thEl&&thEl.value?thEl.value:m.homeTeam;
+          var newAway=taEl&&taEl.value?taEl.value:m.awayTeam;
+          // Teams are optional - save if provided
+          if(db)db.collection('fotbal_config').doc('ko_teams').get().then(function(doc){
+            var data=doc.exists?doc.data():{};
+            data[mid]={home:newHome,away:newAway};
+            db.collection('fotbal_config').doc('ko_teams').set(data);
+          });
+          // Update local match data
+          m.homeTeam=newHome;m.awayTeam=newAway;
+        }
+        saveResultLS(mid,h,a);showToast('Uloženo!');renderAR();
+      });
+    })(mid,m);
+    row.appendChild(sb);
+
+    if(r){
+      var db2=document.createElement('button');db2.className='del-btn';db2.textContent='✕';
+      (function(mid){db2.addEventListener('click',function(){if(confirm('Smazat?')){deleteResultLS(mid);showToast('Smazáno');renderAR();}});})(mid);
+      row.appendChild(db2);
+    }
+
+    wrap.appendChild(row);
+
+    // Tlacitko Ulozit tymy pro TBD zapasy
+    if(isTBD){
+      var stBtn=document.createElement('button');
+      stBtn.textContent='Uložit týmy bez skóre';
+      stBtn.style.cssText='background:rgba(62,207,142,.15);color:#3ecf8e;border:1px solid rgba(62,207,142,.3);border-radius:7px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;margin-top:6px;width:100%;';
+      (function(mid,m,selH,selA){
+        stBtn.addEventListener('click',function(){
+          if(!selH||!selH.value){showToast('Vyber domácí tým!');return;}
+          if(!selA||!selA.value){showToast('Vyber hostující tým!');return;}
+          m.homeTeam=selH.value;m.awayTeam=selA.value;
+          if(db){
+            db.collection('fotbal_config').doc('ko_teams').get().then(function(doc){
+              var data=doc.exists?doc.data():{};
+              data[mid]={home:m.homeTeam,away:m.awayTeam};
+              db.collection('fotbal_config').doc('ko_teams').set(data).then(function(){
+                showToast('Týmy uloženy!');renderAR();
+              });
+            });
+          } else {
+            showToast('Týmy uloženy!');renderAR();
+          }
+        });
+      })(mid,m,selH,selA);
+      wrap.appendChild(stBtn);
+    }
+
+    el.appendChild(wrap);
+  });
+}
+
+// ── TOAST ─────────────────────────────────────────────────
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
+
+// ── INIT ──────────────────────────────────────────────────
+(function(){
+  var saved=S.g('session'),user=null,i;
+  if(saved){
+    if(saved.id==='admin')user={id:'admin',name:'Admin',gender:'m'};
+    else for(i=0;i<PLAYERS.length;i++) if(PLAYERS[i].id===saved.id&&getPin(PLAYERS[i].id)){user=PLAYERS[i];break;}
+  }
+  if(user)showApp(user);else renderPlayerGrid();
+  startSync();
+})();
+</script>
+<canvas id="wow-canvas"></canvas>
+
+
+
+
+
+
+
+
+<canvas id="wow-canvas"></canvas>
+<div class="presne-overlay" id="presneOverlay" onclick="this.className='presne-overlay hide';setTimeout(()=>this.className='presne-overlay',500);">
+  <div class="presne-card">
+    <div class="presne-rays"></div>
+    <span class="presne-emoji">🎯</span>
+    <div class="presne-title">PŘESNĚ!</div>
+    <div class="presne-pts">+20 bodů</div>
+    <div class="presne-match" id="presne-match"></div>
+    <div class="presne-hint">Klepni pro zavření</div>
+  </div>
+</div>
+<div id="leaderToast" class="leader-toast"></div>
+
+</body>
+</html>
