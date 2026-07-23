@@ -198,6 +198,12 @@ nav.tabbar button.active svg{stroke:var(--brass);}
 .hud .player-score .plegs{font-size:13px;color:var(--muted);margin-top:2px;}
 .hud .player-score .pmeta{font-size:12px;color:var(--muted);margin-top:1px;}
 .hud .player-score .pmeta b{color:var(--chalk-dim);}
+.hud .player-score.waiting{opacity:.65;background:var(--green-dim);}
+.hud .player-score .pwaiting{font-size:11px;color:var(--green);font-weight:700;margin-top:4px;letter-spacing:.5px;}
+.grace-banner{
+  text-align:center;font-size:14px;color:var(--green);background:var(--green-dim);
+  border:1px solid var(--green);border-radius:10px;padding:8px 10px;margin:6px 0 10px;font-weight:600;
+}
 .elapsed-timer{
   display:inline-block;font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;
   color:var(--muted);background:var(--felt);border:1px solid var(--line);border-radius:20px;
@@ -664,7 +670,7 @@ function startGame(){
   STATE.active = {
     id: uid(), startedAt: Date.now(), x01: setupState.x01, checkout: setupState.checkout,
     legsTo: setupState.legsTo, players, currentPlayer:0, currentTurn:[], legNumber:1,
-    legStartScores: players.map(p=>setupState.x01), allLegs: []
+    legStartScores: players.map(p=>setupState.x01), allLegs: [], legFinishing: null
   };
   saveActive();
   renderHra();
@@ -709,15 +715,18 @@ function renderPlay(){
         const dartsThrown = p.turns.reduce((s,t)=>s+t.darts.length,0);
         const lastTurn = p.turns.length ? p.turns[p.turns.length-1] : null;
         const lastLabel = lastTurn ? (lastTurn.bust ? 'PŘESTŘ.' : lastTurn.total) : '–';
+        const waiting = g.legFinishing && g.legFinishing.winnerId===p.id;
         return `
-        <div class="player-score ${i===g.currentPlayer?'turn':''}">
+        <div class="player-score ${i===g.currentPlayer?'turn':''} ${waiting?'waiting':''}">
           <div class="pname">${escapeHtml(p.name)}</div>
           <div class="pscore">${i===g.currentPlayer? liveRemaining : p.remaining}</div>
           <div class="plegs">Legy: ${p.legsWon}</div>
           <div class="pmeta">Šipky: ${dartsThrown}</div>
           <div class="pmeta">Posl. kolo: <b>${lastLabel}</b></div>
+          ${waiting?'<div class="pwaiting">✓ ZAVŘENO — čeká</div>':''}
         </div>`;}).join('')}
     </div>
+    ${g.legFinishing ? `<div class="grace-banner">🎯 ${escapeHtml(g.legFinishing.winnerName)} zavřel — ostatní dohrávají kolo</div>` : ''}
     <div style="text-align:center;color:var(--muted);font-size:14px;letter-spacing:1px;">LEG ${g.legNumber} · HRA DO ${g.legsTo} · ${g.checkout==='double'?'DOUBLE OUT':g.checkout==='master'?'MASTER OUT':'STRAIGHT OUT'}</div>
 
     <div class="checkout-box">
@@ -809,6 +818,7 @@ function confirmNumberEntry(){
     if(g.currentTurn.length>=3) return;
     g.currentTurn.push({label:'MIMO', value:0});
     sndDart();
+    turnMultiplier = 1;
     afterDart();
     return;
   }
@@ -839,6 +849,7 @@ function registerThrow(boardNum, zoneType){
   }
   g.currentTurn.push({label, value});
   sndDart();
+  turnMultiplier = 1;
   afterDart();
 }
 
@@ -869,22 +880,56 @@ function finishTurn(){
     sndBust(); speak('Přestřeleno!');
     cp.turns.push({darts:g.currentTurn.slice(), total:0, bust:true});
     g.currentTurn = [];
-    setTimeout(nextPlayer, 900);
+    setTimeout(()=>advanceAfterTurn(cp), 900);
     return;
   }
 
   const commentary = getCommentary(turnTotal);
   if(commentary){ showCommentary(commentary.text, commentary.tier); speak(commentary.text); }
-  else { speak(turnTotal+' bodů'); }
+  else { speak('Celkem '+turnTotal); }
 
   cp.turns.push({darts:g.currentTurn.slice(), total:turnTotal, bust:false});
   cp.remaining = remainingAfter;
   g.currentTurn = [];
 
+  advanceAfterTurn(cp);
+}
+
+// Handles what happens after a player's turn ends: either they just checked
+// out (starting a grace period so the rest of the table finishes the round),
+// they completed a grace-period turn, or it's simply the next player's go.
+function advanceAfterTurn(cp){
+  const g = STATE.active;
+  if(!g) return;
+
+  if(g.legFinishing){
+    // We're in the grace round after someone already checked out.
+    g.legFinishing.pending -= 1;
+    saveActive();
+    if(g.legFinishing.pending <= 0){
+      const winner = g.players.find(p=>p.id===g.legFinishing.winnerId);
+      g.legFinishing = null;
+      endLeg(winner);
+      return;
+    }
+    nextPlayer();
+    return;
+  }
+
   if(cp.remaining===0){
+    // First player to check out this leg — let everyone else finish the round.
+    if(g.players.length>1){
+      g.legFinishing = { winnerId: cp.id, winnerName: cp.name, pending: g.players.length-1 };
+      toast(cp.name+' zavřel! Ostatní ještě dohrají kolo.');
+      speak(cp.name+' zavírá! Ostatní dohrajou kolo.');
+      saveActive();
+      nextPlayer();
+      return;
+    }
     endLeg(cp);
     return;
   }
+
   nextPlayer();
 }
 
@@ -893,7 +938,9 @@ function nextPlayer(){
   if(!g) return;
   turnMultiplier = 1;
   numpadBuffer = '';
-  g.currentPlayer = (g.currentPlayer+1) % g.players.length;
+  do{
+    g.currentPlayer = (g.currentPlayer+1) % g.players.length;
+  } while(g.legFinishing && g.players[g.currentPlayer].id===g.legFinishing.winnerId);
   saveActive();
   renderPlay();
 }
@@ -919,6 +966,7 @@ function endLeg(winner){
   const targetReached = winner.legsWon >= g.legsTo;
 
   // Always reset for another leg — the match only truly ends when the player chooses to finish it.
+  g.legFinishing = null;
   g.legNumber += 1;
   g.currentPlayer = g.players.findIndex(p=>p.id===winner.id);
   g.players.forEach(p=>{ p.remaining = g.x01; p.turns = []; });
@@ -956,7 +1004,7 @@ function startGameFromConfig(cfg){
   STATE.active = {
     id: uid(), startedAt: Date.now(), x01: cfg.x01, checkout: cfg.checkout,
     legsTo: cfg.legsTo, players, currentPlayer:0, currentTurn:[], legNumber:1,
-    legStartScores: players.map(p=>cfg.x01), allLegs: []
+    legStartScores: players.map(p=>cfg.x01), allLegs: [], legFinishing: null
   };
   saveActive();
   renderHra();
@@ -1032,12 +1080,18 @@ function addPlayer(){
    ============================================================ */
 function populateStatSelect(){
   const sel = document.getElementById('stat-player-select');
+  const prevValue = sel.value;
   sel.innerHTML = STATE.players.map(p=>`<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+  if(prevValue && STATE.players.some(p=>p.id===prevValue)) sel.value = prevValue;
 }
-document.getElementById('stat-player-select').addEventListener('change', renderStats);
+document.getElementById('stat-player-select').addEventListener('change', renderStatsContent);
 
 function renderStats(){
   populateStatSelect();
+  renderStatsContent();
+}
+
+function renderStatsContent(){
   const sel = document.getElementById('stat-player-select');
   const content = document.getElementById('stat-content');
   if(STATE.players.length===0){
