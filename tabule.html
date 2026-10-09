@@ -102,6 +102,19 @@ body.idle{cursor:none}
 #draw .dr{flex:none;height:100%;aspect-ratio:1042/1338;background:#fff;border-radius:1.6vh;overflow:hidden;box-shadow:0 0 4vh rgba(0,0,0,.6)}
 #draw .dr img{display:block;width:100%;height:100%;object-fit:contain}
 
+/* FINÁLE – překvapení po dosažení FINAL_AT bodů v celkovém skóre (Čelákovice) */
+#fin{position:fixed;inset:0;z-index:6;display:none;background:radial-gradient(ellipse 70% 60% at 50% 42%,rgba(47,224,122,.2),transparent 70%),radial-gradient(ellipse 60% 40% at 50% 100%,rgba(255,210,63,.14),transparent 70%),var(--bg);
+  flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1.6vh;overflow:hidden}
+#fin.on{display:flex}
+#fin canvas{position:absolute;inset:0;width:100%;height:100%}
+#fin>*:not(canvas){position:relative}
+#fin img{height:13vh;width:auto;filter:drop-shadow(0 0 3vh rgba(47,224,122,.4))}
+#fin .f0{font-family:var(--display);font-size:min(16vh,8.6vw);line-height:.9;letter-spacing:.05em;color:#ffd23f;text-transform:uppercase;text-shadow:0 0 4vh rgba(255,210,63,.4);padding-top:1vh;white-space:nowrap}
+#fin .f1{font-family:var(--display);font-size:12vh;line-height:.9;letter-spacing:.1em;color:#fff;text-transform:uppercase}
+#fin .f2{font-family:var(--display);font-size:5vh;letter-spacing:.14em;color:rgba(255,255,255,.88);text-transform:uppercase}
+#fin .f3{font-family:var(--display);font-size:6.8vh;letter-spacing:.1em;color:var(--S);text-transform:uppercase;margin-top:1vh}
+#fin .f4{font-family:var(--display);font-size:5vh;letter-spacing:.16em;color:#1a1400;background:#ffd23f;border-radius:1.2vh;padding:.6vh 3vh .2vh;margin-top:1.6vh;text-transform:uppercase}
+
 /* stav připojení – zobrazí se jen při problému */
 #net{position:fixed;right:1.6vh;top:1.6vh;width:2.2vh;height:2.2vh;border-radius:50%;background:#e8192c;display:none;z-index:5}
 #net.on{display:block}
@@ -121,6 +134,12 @@ body.idle{cursor:none}
   <div class="k">Slosovatelné vstupné</div><div class="k2">vyhrává číslo:</div>
   <div class="dn" id="dNum"></div></div>
   <div class="dr"><img id="dSp" alt="Partneři"></div></div>
+<div id="fin"><canvas id="finC"></canvas><img id="fLogo" alt="">
+  <div class="f0">Jsme ve finále!!!</div>
+  <div class="f1">Děkujeme!</div>
+  <div class="f2">Moc děkujeme fanouškům za podporu</div>
+  <div class="f3">Uvidíme se v Českých Budějovicích</div>
+  <div class="f4">Finále extraligy · 28. 10. 2026</div></div>
 <div id="net" title="Bez spojení se serverem"></div>
 
 <script>
@@ -230,7 +249,23 @@ function half(el,k,score,cls,used){
   el.innerHTML='<img class="logo" src="'+T.logo+'" alt=""><div class="tn">'+T.name+'</div><div class="sc '+(cls||'')+'">'+score+'</div><div class="tob '+(used?'used':'')+'">TIME-OUT · '+(used?'VYUŽIT':'VOLNÝ')+'</div>';
 }
 function other(k){return k==='S'?'M':'S';}
+var FINAL_AT=5, finOn=false, finRaf=0, finP=[];
+function finLoop(){
+  var c=$('finC'), x=c.getContext('2d'), w=c.width=c.clientWidth, h=c.height=c.clientHeight;
+  if(!finP.length){ var cols=['#2fe07a','#ffd23f','#ffffff','#33b5f4']; for(var i=0;i<90;i++) finP.push({x:Math.random()*w,y:Math.random()*h,r:4+Math.random()*7,v:.6+Math.random()*1.4,d:Math.random()*6.28,c:cols[i%4]}); }
+  x.clearRect(0,0,w,h);
+  finP.forEach(function(p){ p.y+=p.v; p.d+=.02; p.x+=Math.sin(p.d)*.6; if(p.y>h+10){ p.y=-10; p.x=Math.random()*w; }
+    x.save(); x.translate(p.x,p.y); x.rotate(p.d*2); x.fillStyle=p.c; x.globalAlpha=.85; x.fillRect(-p.r/2,-p.r,p.r,p.r*2); x.restore(); });
+  finRaf=requestAnimationFrame(finLoop);
+}
+function finView(s){
+  var on=(s.match&&s.match.s>=FINAL_AT)||/[?&]final\b/.test(location.search);
+  if(on===finOn) return; finOn=on;
+  $('fin').classList.toggle('on',on);
+  if(on){ if(!$('fLogo').getAttribute('src')) $('fLogo').src=TEAMS.S.logo; finLoop(); } else { cancelAnimationFrame(finRaf); }
+}
 function drawView(s){
+  finView(s);
   var on=(s.view==='draw'), n=s.draw||'';
   $('draw').classList.toggle('on',on);
   var el=$('dNum'); el.textContent=n||'– – –';
